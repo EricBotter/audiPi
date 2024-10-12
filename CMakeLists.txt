@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.29)
 project(audipi)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 add_executable(audipi main.cpp
-        main.cpp)
+        main.cpp
+        CdRom.cpp)
