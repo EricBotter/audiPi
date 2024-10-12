@@ -35,15 +35,15 @@ int main(int argc, char *argv[]) {
 
                 if (auto result = cd_rom.read_toc()) {
                     auto audio_disk_toc = result.value();
-                    std::cout << "Start track: " << static_cast<int>(audio_disk_toc.start_track)
-                            << " - End track: " << static_cast<int>(audio_disk_toc.end_track) << std::endl;
+                    std::cout << "Start track: " << +audio_disk_toc.start_track
+                            << " - End track: " << +audio_disk_toc.end_track << std::endl;
 
                     for (auto toc_entry: audio_disk_toc.entries) {
-                        std::cout << std::setfill('0') << std::setw(2) <<
-                            "Track " << +toc_entry.track_num << ": Starts at " <<
-                            +toc_entry.address.minute << ":" <<
-                            +toc_entry.address.second << "." <<
-                            +toc_entry.address.frame << std::endl;
+                        std::cout << "Track " << std::setfill('0') << std::setw(2) << +toc_entry.track_num <<
+                            ": Starts at " <<
+                            std::setfill('0') << std::setw(2) << +toc_entry.address.minute << ":" <<
+                            std::setfill('0') << std::setw(2) << +toc_entry.address.second << "." <<
+                            std::setfill('0') << std::setw(2) << +toc_entry.address.frame << std::endl;
                     }
                 } else {
                     std::cout << "read_toc: cannot read TOC: " << render_error(result.error()) << std::endl;

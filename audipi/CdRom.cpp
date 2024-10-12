@@ -95,7 +95,7 @@ namespace audipi {
 
         std::vector<audio_disk_toc_entry> entries;
 
-        for (auto track = header.cdth_trk0; track < header.cdth_trk1; ++track) {
+        for (auto track = header.cdth_trk0; track <= header.cdth_trk1; ++track) {
             cdrom_tocentry entry {
                 .cdte_track = track,
                 .cdte_format = CD_TIME_FORMAT
