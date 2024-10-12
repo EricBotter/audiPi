@@ -5,6 +5,8 @@
 #include <sys/ioctl.h>
 #include <linux/cdrom.h>
 
+constexpr __u8 CD_TIME_FORMAT = CDROM_MSF;
+
 namespace audipi {
     CdRom::CdRom(const std::string &fd_path) {
         this->cdrom_fd = open("/dev/cdrom", O_RDONLY | O_NONBLOCK);
@@ -58,8 +60,8 @@ namespace audipi {
         if (error != 0) {
             return std::unexpected(errno << 16 | error);
         }
-        return {};
 
+        return {};
     }
 
     std::expected<drive_status, int> CdRom::get_drive_status() const {
@@ -70,6 +72,51 @@ namespace audipi {
         }
 
         return static_cast<audipi::drive_status>(drive_status);
+    }
+
+    disk_type CdRom::get_disk_type() const {
+        int disk_status = ioctl(cdrom_fd, CDROM_DISC_STATUS, 0);
+
+        if (disk_status != CDS_AUDIO and disk_status != CDS_MIXED) {
+            return disk_type::unsupported;
+        }
+
+        return static_cast<disk_type>(disk_status);
+    }
+
+    std::expected<audio_disk_toc, int> CdRom::read_toc() const {
+        cdrom_tochdr header{};
+
+        int header_error = ioctl(cdrom_fd, CDROMREADTOCHDR, &header);
+
+        if (header_error != 0) {
+            return std::unexpected(header_error);
+        }
+
+        std::vector<audio_disk_toc_entry> entries;
+
+        for (auto track = header.cdth_trk0; track < header.cdth_trk1; ++track) {
+            cdrom_tocentry entry {
+                .cdte_track = track,
+                .cdte_format = CD_TIME_FORMAT
+            };
+
+            int entry_error = ioctl(cdrom_fd, CDROMREADTOCENTRY, &entry);
+            if (entry_error != 0) {
+                return std::unexpected(entry_error);
+            }
+
+            entries.push_back({
+                .track_num = track,
+                .address = msf_location{
+                    entry.cdte_addr.msf.minute,
+                    entry.cdte_addr.msf.second,
+                    entry.cdte_addr.msf.frame
+                }
+            });
+        }
+
+        return audio_disk_toc{header.cdth_trk0, header.cdth_trk1, entries};
     }
 
     CdRom::~CdRom() {

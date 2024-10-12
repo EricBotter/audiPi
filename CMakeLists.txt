@@ -5,4 +5,5 @@ set(CMAKE_CXX_STANDARD 23)
 
 add_executable(audipi main.cpp
         main.cpp
-        CdRom.cpp)
+        audipi/CdRom.cpp
+        audipi/AudioPlayer.cpp)
