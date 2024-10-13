@@ -95,25 +95,48 @@ namespace audipi {
 
         std::vector<audio_disk_toc_entry> entries;
 
+        cdrom_tocentry entry{
+            .cdte_track = 0,
+            .cdte_format = CD_TIME_FORMAT
+        };
+
         for (auto track = header.cdth_trk0; track <= header.cdth_trk1; ++track) {
-            cdrom_tocentry entry {
-                .cdte_track = track,
-                .cdte_format = CD_TIME_FORMAT
+            entry.cdte_track = track;
+
+            if (const int entry_error = ioctl(cdrom_fd, CDROMREADTOCENTRY, &entry); entry_error != 0) {
+                return std::unexpected(entry_error);
+            }
+
+            const msf_location current_msf{
+                entry.cdte_addr.msf.minute,
+                entry.cdte_addr.msf.second,
+                entry.cdte_addr.msf.frame
             };
 
-            int entry_error = ioctl(cdrom_fd, CDROMREADTOCENTRY, &entry);
-            if (entry_error != 0) {
-                return std::unexpected(entry_error);
+            if (!entries.empty()) {
+                entries.back().duration = current_msf - entries.back().address;
             }
 
             entries.push_back({
                 .track_num = track,
-                .address = msf_location{
-                    entry.cdte_addr.msf.minute,
-                    entry.cdte_addr.msf.second,
-                    entry.cdte_addr.msf.frame
-                }
+                .address = current_msf
             });
+        }
+
+        // read leadout track to determine duration of last track
+        entry.cdte_track = CDROM_LEADOUT;
+
+        if (const int entry_error = ioctl(cdrom_fd, CDROMREADTOCENTRY, &entry); entry_error == 0) {
+            const msf_location current_msf{
+                entry.cdte_addr.msf.minute,
+                entry.cdte_addr.msf.second,
+                entry.cdte_addr.msf.frame
+            };
+
+            entries.back().duration = current_msf - entries.back().address;
+        } else {
+            // do CDs have a leadout track?
+            printf("CDROMREADTOCENTRY error: %d\n", entry_error);
         }
 
         return audio_disk_toc{header.cdth_trk0, header.cdth_trk1, entries};

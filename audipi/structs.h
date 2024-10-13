@@ -1,6 +1,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 #include <vector>
+#include <sys/types.h>
 
 namespace audipi {
     struct msf_location {
@@ -8,6 +9,9 @@ namespace audipi {
         u_int8_t second;
         u_int8_t frame;
     };
+
+    msf_location operator-(const msf_location& left, const msf_location& right);
+    msf_location operator+(const msf_location& left, const msf_location& right);
 
     struct audio_disk_toc_entry {
         u_int8_t track_num;

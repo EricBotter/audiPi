@@ -43,7 +43,11 @@ int main(int argc, char *argv[]) {
                             ": Starts at " <<
                             std::setfill('0') << std::setw(2) << +toc_entry.address.minute << ":" <<
                             std::setfill('0') << std::setw(2) << +toc_entry.address.second << "." <<
-                            std::setfill('0') << std::setw(2) << +toc_entry.address.frame << std::endl;
+                            std::setfill('0') << std::setw(2) << +toc_entry.address.frame <<
+                            " - Duration: " <<
+                            std::setfill('0') << std::setw(2) << +toc_entry.duration.minute << ":" <<
+                            std::setfill('0') << std::setw(2) << +toc_entry.duration.second << "." <<
+                            std::setfill('0') << std::setw(2) << +toc_entry.duration.frame << std::endl;
                     }
                 } else {
                     std::cout << "read_toc: cannot read TOC: " << render_error(result.error()) << std::endl;
@@ -57,6 +61,8 @@ int main(int argc, char *argv[]) {
     if (auto result = cd_rom.stop(); !result) {
         std::cout << "stop: unexpected error: " << render_error(result.error()) << std::endl;
     }
+
+    return 0;
 
     // Unsupported by my disk drive
     // if (auto result = cd_rom.close_tray(); !result) {
