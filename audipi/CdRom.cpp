@@ -7,6 +7,24 @@
 
 constexpr __u8 CD_TIME_FORMAT = CDROM_MSF;
 
+audipi::msf_location cdrom_addr_to_msf_location(const cdrom_addr &addr) {
+    return {
+        .minute = addr.msf.minute,
+        .second = addr.msf.second,
+        .frame = addr.msf.frame
+    };
+}
+
+cdrom_addr msf_location_to_cdrom_addr(const audipi::msf_location &location) {
+    return {
+        .msf = {
+            .minute = location.minute,
+            .second = location.second,
+            .frame = location.frame
+        }
+    };
+}
+
 namespace audipi {
     CdRom::CdRom(const std::string &fd_path) {
         this->cdrom_fd = open("/dev/cdrom", O_RDONLY | O_NONBLOCK);
@@ -17,16 +35,14 @@ namespace audipi {
     }
 
     std::expected<void, int> CdRom::start() const {
-        int error = ioctl(cdrom_fd, CDROMSTART, 0);
-        if (error != 0) {
+        if (int error = ioctl(cdrom_fd, CDROMSTART, 0)) {
             return std::unexpected(errno);
         }
         return {};
     }
 
     std::expected<void, int> CdRom::stop() const {
-        int error = ioctl(cdrom_fd, CDROMSTOP, 0);
-        if (error != 0) {
+        if (int error = ioctl(cdrom_fd, CDROMSTOP, 0)) {
             return std::unexpected(errno);
         }
         return {};
@@ -55,10 +71,8 @@ namespace audipi {
     }
 
     std::expected<void, int> CdRom::close_tray() const {
-        int error = ioctl(cdrom_fd, CDROMCLOSETRAY, 0);
-
-        if (error != 0) {
-            return std::unexpected(errno << 16 | error);
+        if (int error = ioctl(cdrom_fd, CDROMCLOSETRAY, 0)) {
+            return std::unexpected(error);
         }
 
         return {};
@@ -84,16 +98,14 @@ namespace audipi {
         return static_cast<disk_type>(disk_status);
     }
 
-    std::expected<audio_disk_toc, int> CdRom::read_toc() const {
+    std::expected<disk_toc, int> CdRom::read_toc() const {
         cdrom_tochdr header{};
 
-        int header_error = ioctl(cdrom_fd, CDROMREADTOCHDR, &header);
-
-        if (header_error != 0) {
+        if (int header_error = ioctl(cdrom_fd, CDROMREADTOCHDR, &header)) {
             return std::unexpected(header_error);
         }
 
-        std::vector<audio_disk_toc_entry> entries;
+        std::vector<disk_toc_entry> entries;
 
         cdrom_tocentry entry{
             .cdte_track = 0,
@@ -103,15 +115,11 @@ namespace audipi {
         for (auto track = header.cdth_trk0; track <= header.cdth_trk1; ++track) {
             entry.cdte_track = track;
 
-            if (const int entry_error = ioctl(cdrom_fd, CDROMREADTOCENTRY, &entry); entry_error != 0) {
+            if (const int entry_error = ioctl(cdrom_fd, CDROMREADTOCENTRY, &entry)) {
                 return std::unexpected(entry_error);
             }
 
-            const msf_location current_msf{
-                entry.cdte_addr.msf.minute,
-                entry.cdte_addr.msf.second,
-                entry.cdte_addr.msf.frame
-            };
+            const auto current_msf = cdrom_addr_to_msf_location(entry.cdte_addr);
 
             if (!entries.empty()) {
                 entries.back().duration = current_msf - entries.back().address;
@@ -127,19 +135,50 @@ namespace audipi {
         entry.cdte_track = CDROM_LEADOUT;
 
         if (const int entry_error = ioctl(cdrom_fd, CDROMREADTOCENTRY, &entry); entry_error == 0) {
-            const msf_location current_msf{
-                entry.cdte_addr.msf.minute,
-                entry.cdte_addr.msf.second,
-                entry.cdte_addr.msf.frame
-            };
+            const auto current_msf = cdrom_addr_to_msf_location(entry.cdte_addr);
 
             entries.back().duration = current_msf - entries.back().address;
         } else {
-            // do CDs have a leadout track?
-            printf("CDROMREADTOCENTRY error: %d\n", entry_error);
+            // do CDs always have a leadout track?
+            printf("CDROMREADTOCENTRY error on reading leadout track: %d\n", entry_error);
         }
 
-        return audio_disk_toc{header.cdth_trk0, header.cdth_trk1, entries};
+        return disk_toc{header.cdth_trk0, header.cdth_trk1, entries};
+    }
+
+    std::expected<audio_frame, int> CdRom::read_frame(const msf_location &location) const {
+
+        u_int8_t buffer[2352]{};
+
+        cdrom_read_audio audio_read{
+            .addr = msf_location_to_cdrom_addr(location),
+            .addr_format = CD_TIME_FORMAT,
+            .nframes = 1,
+            .buf = buffer
+        };
+
+        if (int read_error = ioctl(cdrom_fd, CDROMREADAUDIO, &audio_read)) {
+            return std::unexpected(read_error);
+        }
+
+        audio_frame frame{};
+
+        frame.raw_data = std::to_array(buffer);
+
+        cdrom_subchnl audio_subchannel{
+            .cdsc_format = CDROM_MSF,
+        };
+
+        if (int read_error = ioctl(cdrom_fd, CDROMSUBCHNL, &audio_subchannel)) {
+            return std::unexpected(read_error);
+        }
+
+        frame.track_num = audio_subchannel.cdsc_trk;
+        frame.index_num = audio_subchannel.cdsc_ind;
+        frame.location_abs = cdrom_addr_to_msf_location(audio_subchannel.cdsc_absaddr);
+        frame.location_rel = cdrom_addr_to_msf_location(audio_subchannel.cdsc_reladdr);
+
+        return frame;
     }
 
     CdRom::~CdRom() {
