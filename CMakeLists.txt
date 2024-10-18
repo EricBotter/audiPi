@@ -9,6 +9,7 @@ add_executable(audipi main.cpp
         main.cpp
         audipi/CdRom.cpp
         audipi/Player.cpp
-        audipi/structs.cpp)
+        audipi/structs.cpp
+        audipi/AudioDevice.cpp)
 
 target_link_libraries(audipi ALSA::ALSA)

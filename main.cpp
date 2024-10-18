@@ -4,8 +4,7 @@
 #include <csignal>
 #include <sstream>
 
-#include <alsa/asoundlib.h>
-
+#include "audipi/AudioDevice.h"
 #include "audipi/CdRom.h"
 
 std::string render_error(const int error_num) {
@@ -20,7 +19,8 @@ void intHandler(int dummy) {
     keepRunning = 0;
 }
 
-snd_pcm_t* setup_audio();
+snd_pcm_t *setup_audio();
+
 void print_frame(audipi::audio_frame frame, audipi::msf_location current_location);
 
 int main(int argc, char *argv[]) {
@@ -44,11 +44,11 @@ int main(int argc, char *argv[]) {
         std::cout << "get_drive_status: unexpected error: " << render_error(drive_status_result.error()) << std::endl;
     }
 
-    std::cout << std::endl << "Setup audio device..." << std::endl;
+    std::cout << "Setup audio device..." << std::endl;
 
-    auto snd_pcm = setup_audio();
+    auto audio_device = audipi::AudioDevice();
 
-    if (!snd_pcm) {
+    if (!audio_device.is_init()) {
         std::cout << "Failed to setup audio device" << std::endl;
         return -1;
     }
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
                 << "Reading TOC..." << std::endl;
 
         if (auto result = cd_rom.read_toc()) {
-            const auto& audio_disk_toc = result.value();
+            const auto &audio_disk_toc = result.value();
 
             toc_entries = audio_disk_toc.entries;
 
@@ -76,14 +76,14 @@ int main(int argc, char *argv[]) {
 
             for (auto [track_num, address, duration]: toc_entries) {
                 std::cout << "Track " << std::setfill('0') << std::setw(2) << +track_num <<
-                    ": Starts at " <<
-                    std::setfill('0') << std::setw(2) << +address.minute << ":" <<
-                    std::setfill('0') << std::setw(2) << +address.second << "." <<
-                    std::setfill('0') << std::setw(2) << +address.frame <<
-                    " - Duration: " <<
-                    std::setfill('0') << std::setw(2) << +duration.minute << ":" <<
-                    std::setfill('0') << std::setw(2) << +duration.second << "." <<
-                    std::setfill('0') << std::setw(2) << +duration.frame << std::endl;
+                        ": Starts at " <<
+                        std::setfill('0') << std::setw(2) << +address.minute << ":" <<
+                        std::setfill('0') << std::setw(2) << +address.second << "." <<
+                        std::setfill('0') << std::setw(2) << +address.frame <<
+                        " - Duration: " <<
+                        std::setfill('0') << std::setw(2) << +duration.minute << ":" <<
+                        std::setfill('0') << std::setw(2) << +duration.second << "." <<
+                        std::setfill('0') << std::setw(2) << +duration.frame << std::endl;
             }
         } else {
             std::cout << "read_toc: cannot read TOC: " << render_error(result.error()) << std::endl;
@@ -106,25 +106,22 @@ int main(int argc, char *argv[]) {
 
             auto frame = audio_frame.value();
 
-            long written = snd_pcm_writei(snd_pcm, frame.raw_data.data(), 588);
-            if (written < 0) {
-                int recover = snd_pcm_recover(snd_pcm, written, 0);
-                if (recover < 0) {
-                    std::cout << "Error writing to PCM device: " << snd_strerror(written) << " (" << written << ")" <<
+            auto result = audio_device.enqueue_for_playback_sync(frame.raw_data.data(), frame.raw_data.size());
+            if (!result) {
+                std::cout << "enqueue_for_playback_sync: unexpected error: " <<
+                        audipi::AudioDevice::render_error(result.error()) << std::endl;
+                break;
+            }
+            if (result.value() != frame.raw_data.size()) {
+                std::cout << "enqueue_for_playback_sync: unexpected number of bytes written: " << result.value() <<
                         std::endl;
-                    std::cout << "Error recovering PCM device: " << snd_strerror(recover) << " (" << recover << ")" <<
-                        std::endl;
-                    break;
-                }
+                break;
             }
 
             print_frame(frame, current_location);
 
             current_location = current_location + audipi::msf_location{0, 0, 1};
         }
-
-        snd_pcm_drain(snd_pcm);
-        snd_pcm_close(snd_pcm);
     }
 
     std::cout << std::endl << "Stopping CD..." << std::endl;
@@ -159,66 +156,6 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-snd_pcm_t* setup_audio() {
-    unsigned int channels = 2;
-    unsigned int rate = 44100;
-    unsigned long period_size = 2352;
-
-    snd_pcm_t *handle = nullptr;
-
-    int error = snd_pcm_open(&handle, "sysdefault", SND_PCM_STREAM_PLAYBACK, 0);
-
-    if (error < 0) {
-        printf("Failed to open PCM device %s\n", snd_strerror(error));
-        return nullptr;
-    }
-
-    snd_pcm_sw_params_t *sw_params = nullptr;
-    snd_pcm_hw_params_t *hw_params = nullptr;
-    snd_pcm_sw_params_malloc(&sw_params);
-    snd_pcm_sw_params_current(handle, sw_params);
-
-    snd_pcm_hw_params_alloca(&hw_params);
-
-    if (snd_pcm_hw_params_any(handle, hw_params) < 0) {
-        printf("Failed to retrieve HW params\n");
-        return nullptr;
-    }
-
-    if ((error = snd_pcm_hw_params_set_access(handle, hw_params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0) {
-        printf("ERROR: Can't set interleaved mode. %s\n", snd_strerror(error));
-        return nullptr;
-    }
-
-    if ((error = snd_pcm_hw_params_set_format(handle, hw_params, SND_PCM_FORMAT_S16_LE)) < 0) {
-        printf("ERROR: Can't set format. %s\n", snd_strerror(error));
-        return nullptr;
-    }
-
-    if ((error = snd_pcm_hw_params_set_channels(handle, hw_params, channels)) < 0) {
-        printf("ERROR: Can't set channels number. %s\n", snd_strerror(error));
-        return nullptr;
-    }
-    if ((error = snd_pcm_hw_params_set_rate_near(handle, hw_params, &rate, nullptr)) < 0) {
-        printf("ERROR: Can't set rate. %s\n", snd_strerror(error));
-        return nullptr;
-    }
-
-    if ((error = snd_pcm_hw_params_set_period_size_near(handle, hw_params, &period_size, nullptr)) < 0) {
-        printf("Error: Can't set period size. %s\n", snd_strerror(error));
-        return nullptr;
-    }
-
-    /* Push ALSA HW params */
-    if ((error = snd_pcm_hw_params(handle, hw_params)) < 0) {
-        printf("Failed to set HW params: %s\n", snd_strerror(error));
-        return nullptr;
-    }
-
-    printf("Playback setup successful\n");
-    return handle;
-}
-
 void print_frame(audipi::audio_frame frame, audipi::msf_location current_location) {
     std::array<int16_t, 588 * 2> packed_data{};
     std::array<int16_t, 588> left_channel{};
@@ -240,6 +177,7 @@ void print_frame(audipi::audio_frame frame, audipi::msf_location current_locatio
             std::setfill('0') << std::setw(2) << +current_location.minute << ":" <<
             std::setfill('0') << std::setw(2) << +current_location.second << "." <<
             std::setfill('0') << std::setw(2) << +current_location.frame <<
-            "] - [" << std::setfill(' ') << std::setw(33) << std::string(left_max/327/3, '#')
-            << "|" <<  std::setw(33) << std::left << std::string(right_max/327/3, '#') << "]" << std::right << std::flush;
+            "] - [" << std::setfill(' ') << std::setw(33) << std::string(left_max / 327 / 3, '#')
+            << "|" << std::setw(33) << std::left << std::string(right_max / 327 / 3, '#') << "]" << std::right <<
+            std::flush;
 }
