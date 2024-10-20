@@ -10,6 +10,7 @@ add_executable(audipi main.cpp
         audipi/CdRom.cpp
         audipi/Player.cpp
         audipi/structs.cpp
-        audipi/AudioDevice.cpp)
+        audipi/AudioDevice.cpp
+        audipi/SampleBuffer.cpp)
 
 target_link_libraries(audipi ALSA::ALSA)

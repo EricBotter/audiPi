@@ -14,6 +14,8 @@ namespace audipi {
     msf_location operator-(const msf_location& left, const msf_location& right);
     msf_location operator+(const msf_location& left, const msf_location& right);
 
+    msf_location operator+(const msf_location& left, const size_t& samples);
+
     struct disk_toc_entry {
         u_int8_t track_num;
         msf_location address;

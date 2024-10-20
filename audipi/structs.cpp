@@ -17,6 +17,16 @@ namespace audipi {
         return {mins, secs, frames};
     }
 
+    msf_location operator+(const msf_location &left, const size_t &samples) {
+        const size_t frames = samples / 588;
+        const msf_location right = {
+            static_cast<u_int8_t>(frames / FRAME_LIMIT / SEC_LIMIT),
+            static_cast<u_int8_t>(frames / FRAME_LIMIT % SEC_LIMIT),
+            static_cast<u_int8_t>(frames % FRAME_LIMIT)
+        };
+        return left + right;
+    }
+
     msf_location operator-(const msf_location &left, const msf_location &right) {
         u_int8_t frames = left.frame - right.frame;
         u_int8_t secs = left.second - right.second;
