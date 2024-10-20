@@ -11,6 +11,8 @@ add_executable(audipi main.cpp
         audipi/Player.cpp
         audipi/structs.cpp
         audipi/AudioDevice.cpp
-        audipi/SampleBuffer.cpp)
+        audipi/SampleBuffer.cpp
+        audipi/PlayerTrack.cpp
+        audipi/PlayerTrack.h)
 
 target_link_libraries(audipi ALSA::ALSA)

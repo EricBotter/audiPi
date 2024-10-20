@@ -14,6 +14,9 @@ namespace audipi {
     msf_location operator-(const msf_location& left, const msf_location& right);
     msf_location operator+(const msf_location& left, const msf_location& right);
 
+    msf_location& operator+=(msf_location& left, const msf_location& right);
+    msf_location& operator-=(msf_location& left, const msf_location& right);
+
     msf_location operator+(const msf_location& left, const size_t& samples);
 
     struct disk_toc_entry {
@@ -34,6 +37,10 @@ namespace audipi {
         msf_location location_abs;
         msf_location location_rel;
         std::array<u_int8_t, 2352> raw_data;
+    };
+
+    struct sample_data {
+        u_int8_t data[4];
     };
 }
 

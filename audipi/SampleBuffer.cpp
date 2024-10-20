@@ -1,8 +1,10 @@
 #include "SampleBuffer.h"
 
+#include "structs.h"
+
 namespace audipi {
     SampleBuffer::SampleBuffer() {
-        this->buffer = std::vector<u_int8_t>(44100 * 4); // 1 second of 44.1kHz stereo audio
+        this->buffer = std::vector<sample_data>(44100); // 1 second of 44.1kHz stereo audio
         this->head = 0;
         this->tail = 0;
     }
@@ -11,10 +13,9 @@ namespace audipi {
         return (this->buffer.size() + this->head - this->tail) % this->buffer.size();
     }
 
-    void SampleBuffer::push_samples(const u_int8_t *samples, const size_t count) {
-        // circular buffer
+    void SampleBuffer::push_samples(const sample_data *samples, const size_t count) {
         size_t size = this->buffer.size() - this->head + this->tail;
-        while (size < count) {
+        while (size <= count) {
             this->reallocate_buffer();
             size = this->buffer.size() - this->head + this->tail;
         }
@@ -25,14 +26,14 @@ namespace audipi {
         }
     }
 
-    void SampleBuffer::pop_samples(u_int8_t *samples, const size_t count) {
+    void SampleBuffer::pop_samples(sample_data *samples, const size_t count) {
         for (size_t i = 0; i < count; ++i) { // todo: optimize
             samples[i] = this->buffer[this->tail];
             this->tail = (this->tail + 1) % this->buffer.size();
         }
     }
 
-    void SampleBuffer::read_samples(u_int8_t *samples, const size_t count, const size_t offset) const {
+    void SampleBuffer::read_samples(sample_data *samples, const size_t count, const size_t offset) const {
         for (size_t i = 0; i < count; ++i) { // todo: optimize
             samples[i] = this->buffer[(this->tail + offset + i) % this->buffer.size()];
         }
@@ -43,7 +44,7 @@ namespace audipi {
     }
 
     void SampleBuffer::reallocate_buffer() {
-        std::vector<u_int8_t> new_buffer(this->buffer.size() * 2);
+        std::vector<sample_data> new_buffer(this->buffer.size() * 2);
         size_t i = 0;
         while (this->tail != this->head) {
             new_buffer[i] = this->buffer[this->tail];

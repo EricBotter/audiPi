@@ -105,6 +105,10 @@ namespace audipi {
         return written * 4;
     }
 
+    void AudioDevice::prepare() const {
+        snd_pcm_prepare(this->pcm_handle);
+    }
+
     void AudioDevice::set_playback_start_position() {
         snd_pcm_status_t *status;
         snd_pcm_status_malloc(&status);

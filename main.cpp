@@ -3,9 +3,12 @@
 #include <cstring>
 #include <csignal>
 #include <sstream>
+#include <thread>
+#include <chrono>
 
 #include "audipi/AudioDevice.h"
 #include "audipi/CdRom.h"
+#include "audipi/Player.h"
 #include "audipi/SampleBuffer.h"
 
 std::string render_error(const int error_num) {
@@ -46,12 +49,12 @@ int main(int argc, char *argv[]) {
         std::cout << "get_drive_status: unexpected error: " << render_error(drive_status_result.error()) << std::endl;
     }
 
-    std::cout << "Setup audio device..." << std::endl;
+    std::cout << "Setup Player..." << std::endl;
 
-    auto audio_device = audipi::AudioDevice();
+    auto player = audipi::Player();
 
-    if (!audio_device.is_init()) {
-        std::cout << "Failed to setup audio device" << std::endl;
+    if (!player.is_init()) {
+        std::cout << "cannot start player (error in audio_device init)" << std::endl;
         return -1;
     }
 
@@ -60,92 +63,100 @@ int main(int argc, char *argv[]) {
         std::cout << "start: unexpected error: " << render_error(result.error()) << std::endl;
     }
 
-    std::vector<audipi::disk_toc_entry> toc_entries{};
-
     if (auto disk_type = cd_rom.get_disk_type(); disk_type == audipi::disk_type::unsupported) {
         std::cout << "get_disk_type: unsupported disk" << std::endl;
+        return -1;
+    }
+
+    std::cout << "Reading TOC..." << std::endl;
+
+    audipi::disk_toc audio_disk_toc;
+
+    if (auto result = cd_rom.read_toc()) {
+        audio_disk_toc = result.value();
+
+        std::cout << "Start track: " << +audio_disk_toc.start_track
+                << " - End track: " << +audio_disk_toc.end_track << std::endl;
+
+        for (auto [track_num, address, duration]: audio_disk_toc.entries) {
+            std::cout << "Track " << std::setfill('0') << std::setw(2) << +track_num <<
+                    ": Starts at " <<
+                    std::setfill('0') << std::setw(2) << +address.minute << ":" <<
+                    std::setfill('0') << std::setw(2) << +address.second << "." <<
+                    std::setfill('0') << std::setw(2) << +address.frame <<
+                    " - Duration: " <<
+                    std::setfill('0') << std::setw(2) << +duration.minute << ":" <<
+                    std::setfill('0') << std::setw(2) << +duration.second << "." <<
+                    std::setfill('0') << std::setw(2) << +duration.frame << std::endl;
+        }
     } else {
-        std::cout << "get_disk_type: disk of type " << static_cast<int>(disk_type) << std::endl
-                << "Reading TOC..." << std::endl;
-
-        if (auto result = cd_rom.read_toc()) {
-            const auto &audio_disk_toc = result.value();
-
-            toc_entries = audio_disk_toc.entries;
-
-            std::cout << "Start track: " << +audio_disk_toc.start_track
-                    << " - End track: " << +audio_disk_toc.end_track << std::endl;
-
-            for (auto [track_num, address, duration]: toc_entries) {
-                std::cout << "Track " << std::setfill('0') << std::setw(2) << +track_num <<
-                        ": Starts at " <<
-                        std::setfill('0') << std::setw(2) << +address.minute << ":" <<
-                        std::setfill('0') << std::setw(2) << +address.second << "." <<
-                        std::setfill('0') << std::setw(2) << +address.frame <<
-                        " - Duration: " <<
-                        std::setfill('0') << std::setw(2) << +duration.minute << ":" <<
-                        std::setfill('0') << std::setw(2) << +duration.second << "." <<
-                        std::setfill('0') << std::setw(2) << +duration.frame << std::endl;
-            }
-        } else {
-            std::cout << "read_toc: cannot read TOC: " << render_error(result.error()) << std::endl;
-        }
+        std::cout << "read_toc: cannot read TOC: " << render_error(result.error()) << std::endl;
+        return -1;
     }
 
-    if (!toc_entries.empty()) {
-        audipi::SampleBuffer sample_buffer{};
+    if (!audio_disk_toc.entries.empty()) {
+        std::cout << "Enqueuing CD..." << std::endl;
 
-        std::cout << "Start reading CD..." << std::endl;
-
-        audipi::msf_location current_location{0, 2, 0};
-
-        auto audio_frame = cd_rom.read_frame(current_location);
-        audio_device.set_playback_start_position();
-
-        size_t playback_position = 0;
-
-        // ReSharper disable once CppDFALoopConditionNotUpdated
-        while (keepRunning) {
-            if (!audio_frame) {
-                std::cout << "read_frame: unexpected error: " << render_error(audio_frame.error()) << std::endl;
-                break;
-            }
-
-            auto frame = audio_frame.value();
-
-            sample_buffer.push_samples(frame.raw_data.data(), frame.raw_data.size());
-
-            auto result = audio_device.enqueue_for_playback_sync(frame.raw_data.data(), frame.raw_data.size());
-            if (!result) {
-                std::cout << "enqueue_for_playback_sync: unexpected error: " <<
-                        audipi::AudioDevice::render_error(result.error()) << std::endl;
-                break;
-            }
-            if (result.value() != frame.raw_data.size()) {
-                std::cout << "enqueue_for_playback_sync: unexpected number of bytes written: " << result.value() <<
-                    " Likely buffer underrun. Resetting playback position..." << std::endl;
-
-                audio_device.set_playback_start_position();
-                result = audio_device.enqueue_for_playback_sync(frame.raw_data.data(), frame.raw_data.size());
-                if (!result) {
-                    std::cout << "enqueue_for_playback_sync: unexpected error after playback reset: " <<
-                            audipi::AudioDevice::render_error(result.error()) << std::endl;
-                    std::cout << "Exiting..." << std::endl;
-                    break;
-                }
-            }
-
-            auto new_playback_position = audio_device.get_playback_position();
-            std::cout << "Playback position: " << new_playback_position << "\t\t\t";
-
-            sample_buffer.discard_samples((new_playback_position - playback_position) * 4);
-            print_frame(sample_buffer, audipi::msf_location{0, 2, 0} + playback_position, frame.track_num);
-            playback_position = new_playback_position;
-
-            current_location = current_location + audipi::msf_location{0, 0, 1};
-            audio_frame = cd_rom.read_frame(current_location);
-        }
+        player.enqueue_cd(cd_rom, audio_disk_toc);
     }
+
+    player.play();
+
+    // ReSharper disable once CppDFALoopConditionNotUpdated
+    while (keepRunning) {
+        player.tick();
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    //     audipi::msf_location current_location{0, 2, 0};
+    //
+    //     auto audio_frame = cd_rom.read_frame(current_location);
+    //     audio_device.set_playback_start_position();
+    //
+    //     size_t playback_position = 0;
+    //
+    //     // ReSharper disable once CppDFALoopConditionNotUpdated
+    //     while (keepRunning) {
+    //         if (!audio_frame) {
+    //             std::cout << "read_frame: unexpected error: " << render_error(audio_frame.error()) << std::endl;
+    //             break;
+    //         }
+    //
+    //         auto frame = audio_frame.value();
+    //
+    //         sample_buffer.push_samples(frame.raw_data.data(), frame.raw_data.size());
+    //
+    //         auto result = audio_device.enqueue_for_playback_sync(frame.raw_data.data(), frame.raw_data.size());
+    //         if (!result) {
+    //             std::cout << "enqueue_for_playback_sync: unexpected error: " <<
+    //                     audipi::AudioDevice::render_error(result.error()) << std::endl;
+    //             break;
+    //         }
+    //         if (result.value() != frame.raw_data.size()) {
+    //             std::cout << "enqueue_for_playback_sync: unexpected number of bytes written: " << result.value() <<
+    //                 " Likely buffer underrun. Resetting playback position..." << std::endl;
+    //
+    //             audio_device.set_playback_start_position();
+    //             result = audio_device.enqueue_for_playback_sync(frame.raw_data.data(), frame.raw_data.size());
+    //             if (!result) {
+    //                 std::cout << "enqueue_for_playback_sync: unexpected error after playback reset: " <<
+    //                         audipi::AudioDevice::render_error(result.error()) << std::endl;
+    //                 std::cout << "Exiting..." << std::endl;
+    //                 break;
+    //             }
+    //         }
+    //
+    //         auto new_playback_position = audio_device.get_playback_position();
+    //         std::cout << "Playback position: " << new_playback_position << "\t\t\t";
+    //
+    //         sample_buffer.discard_samples((new_playback_position - playback_position) * 4);
+    //         print_frame(sample_buffer, audipi::msf_location{0, 2, 0} + playback_position, frame.track_num);
+    //         playback_position = new_playback_position;
+    //
+    //         current_location = current_location + audipi::msf_location{0, 0, 1};
+    //         audio_frame = cd_rom.read_frame(current_location);
+    //     }
+    // }
 
     std::cout << std::endl;
     // std::cout << "Stopping CD..." << std::endl;
@@ -186,7 +197,7 @@ void print_frame(const audipi::SampleBuffer &sample_buffer, const audipi::msf_lo
     std::array<int16_t, 588> left_channel{};
     std::array<int16_t, 588> right_channel{};
 
-    sample_buffer.read_samples(reinterpret_cast<uint8_t *>(packed_data.data()), 2352, 0);
+    // sample_buffer.read_samples(reinterpret_cast<uint8_t *>(packed_data.data()), 2352, 0);
 
     for (int i = 0; i < 588; ++i) {
         left_channel[i] = static_cast<int16_t>(std::abs(packed_data[i * 2]));

@@ -21,6 +21,8 @@ namespace audipi {
 
         [[nodiscard]] std::expected<long, int> enqueue_for_playback_sync(const uint8_t *buffer, std::size_t size) const;
 
+        void prepare() const;
+
         void set_playback_start_position();
 
         [[nodiscard]] long get_playback_position() const;
