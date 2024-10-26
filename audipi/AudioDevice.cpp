@@ -7,7 +7,6 @@ namespace audipi {
     AudioDevice::AudioDevice() {
         unsigned int channels = 2;
         unsigned int rate = 44100;
-        unsigned long period_size = 2352;
 
         this->pcm_handle = nullptr;
 
@@ -49,12 +48,6 @@ namespace audipi {
 
         if ((error = snd_pcm_hw_params_set_rate_near(this->pcm_handle, hw_params, &rate, nullptr)) < 0) {
             printf("ERROR: Can't set rate. %s\n", snd_strerror(error));
-            this->pcm_handle = nullptr;
-            return;
-        }
-
-        if ((error = snd_pcm_hw_params_set_period_size_near(this->pcm_handle, hw_params, &period_size, nullptr)) < 0) {
-            printf("Error: Can't set period size. %s\n", snd_strerror(error));
             this->pcm_handle = nullptr;
             return;
         }
@@ -104,8 +97,13 @@ namespace audipi {
         snd_pcm_prepare(this->pcm_handle);
     }
 
-    long AudioDevice::get_samples_in_buffer() const {
-        return static_cast<long>(this->buffer_size) - snd_pcm_avail_update(this->pcm_handle);
+    std::expected<unsigned long, long> AudioDevice::get_samples_in_buffer() const {
+        snd_pcm_sframes_t pcm_avail_update = snd_pcm_avail_update(this->pcm_handle);
+        if (pcm_avail_update < 0) {
+            return std::unexpected(pcm_avail_update);
+        }
+
+        return this->buffer_size - pcm_avail_update;
     }
 
     std::string AudioDevice::render_error(const int error_code) {

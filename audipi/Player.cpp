@@ -42,9 +42,22 @@ namespace audipi {
             }
         }
 
-        if (this->status == PlayerStatus::PLAYING && audio_device.get_samples_in_buffer() < sufficient_samples) {
+        if (this->status == PlayerStatus::PLAYING) {
+            const auto samples_in_buffer_maybe = audio_device.get_samples_in_buffer();
+            if (!samples_in_buffer_maybe) {
+                printf("  Error reading samples in audio device buffer\n");
+                this->status = PlayerStatus::ERROR;
+                return;
+            }
+
+            const auto samples_in_buffer = samples_in_buffer_maybe.value();
+
+            if (samples_in_buffer > sufficient_samples) {
+                return;
+            }
+
             printf("  Enqueuing %d samples for playback\n", sufficient_samples);
-            printf("  Audio device buffer size: %ld\n", audio_device.get_samples_in_buffer());
+            printf("  Audio device buffer size: %ld\n", samples_in_buffer);
 
             sample_data samples[sufficient_samples];
             sample_buffer.pop_samples(samples, sufficient_samples);

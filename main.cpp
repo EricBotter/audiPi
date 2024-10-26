@@ -19,7 +19,7 @@ std::string render_error(const int error_num) {
 
 static int keepRunning = 1;
 
-void intHandler(int dummy) {
+void intHandler(int ignored) {
     keepRunning = 0;
 }
 
@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
     // ReSharper disable once CppDFALoopConditionNotUpdated
     while (keepRunning) {
         player.tick();
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     std::cout << std::endl;
