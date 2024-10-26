@@ -62,8 +62,9 @@ namespace audipi {
             sample_data samples[sufficient_samples];
             sample_buffer.pop_samples(samples, sufficient_samples);
 
-            if (audio_device.enqueue_for_playback_sync(reinterpret_cast<u_int8_t *>(samples), sufficient_samples * 4)) {
-                ;
+            if (const auto enqueue_for_playback_maybe = audio_device.enqueue_for_playback(
+                reinterpret_cast<u_int8_t *>(samples), sufficient_samples * 4)) {
+                printf("  Enqueued %ld samples for playback\n", enqueue_for_playback_maybe.value());
             } else {
                 printf("  Error enqueuing samples for playback\n");
                 this->status = PlayerStatus::ERROR;

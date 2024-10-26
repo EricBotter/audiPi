@@ -10,7 +10,7 @@ namespace audipi {
 
         this->pcm_handle = nullptr;
 
-        int error = snd_pcm_open(&this->pcm_handle, "default", SND_PCM_STREAM_PLAYBACK, 0);
+        int error = snd_pcm_open(&this->pcm_handle, "default", SND_PCM_STREAM_PLAYBACK, SND_PCM_NONBLOCK);
 
         if (error < 0) {
             printf("Failed to open PCM device %s\n", snd_strerror(error));
@@ -79,12 +79,15 @@ namespace audipi {
         return this->pcm_handle != nullptr;
     }
 
-    std::expected<long, int> AudioDevice::enqueue_for_playback_sync(const uint8_t *buffer, const std::size_t size) const {
+    std::expected<long, int> AudioDevice::enqueue_for_playback(const uint8_t *buffer, const std::size_t size) const {
         if (size % 4) {
             return std::unexpected(0);
         }
 
-        auto written = snd_pcm_writei(this->pcm_handle, buffer, size/4);
+        const auto written = snd_pcm_writei(this->pcm_handle, buffer, size/4);
+        if (written == -EAGAIN) {
+            return 0;
+        }
         if (written < 0) {
             if (int recover = snd_pcm_recover(this->pcm_handle, static_cast<int>(written), 0); recover < 0) {
                 return std::unexpected(recover);
