@@ -10,11 +10,7 @@ namespace audipi {
     class CdPlayerTrack {
         CdRom &cd_rom;
         const disk_toc_entry &track;
-
-        struct current_location {
-            msf_location location;
-            size_t samples;
-        } current_location;
+        msfs_location current_location;
 
     public:
         CdPlayerTrack(CdRom &cd_rom, const disk_toc_entry &track);

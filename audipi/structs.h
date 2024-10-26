@@ -5,10 +5,28 @@
 #include <sys/types.h>
 
 namespace audipi {
+    /**
+    * @brief Represents a location on a CD in MSF format (minute, second, frame)
+    */
     struct msf_location {
         u_int8_t minute;
         u_int8_t second;
         u_int8_t frame;
+    };
+
+    /**
+    * @brief Represents a more accurate location on a CD in MSF format (minute, second, frame) with samples in a frame.
+    * There are 588 samples in a frame.
+    */
+    struct msfs_location {
+        u_int8_t minute;
+        u_int8_t second;
+        u_int8_t frame;
+        u_int16_t samples;
+
+        operator msf_location() const { // NOLINT(*-explicit-constructor)
+            return *reinterpret_cast<const msf_location*>(this);
+        }
     };
 
     msf_location operator-(const msf_location& left, const msf_location& right);
@@ -18,6 +36,14 @@ namespace audipi {
     msf_location& operator-=(msf_location& left, const msf_location& right);
 
     msf_location operator+(const msf_location& left, const size_t& samples);
+
+    msfs_location operator-(const msfs_location& left, const msfs_location& right);
+    msfs_location operator+(const msfs_location& left, const msfs_location& right);
+
+    msfs_location& operator+=(msfs_location& left, const msfs_location& right);
+    msfs_location& operator-=(msfs_location& left, const msfs_location& right);
+
+    msfs_location operator+(const msfs_location& left, const size_t& samples);
 
     struct disk_toc_entry {
         u_int8_t track_num;
