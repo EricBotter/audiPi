@@ -5,8 +5,6 @@
 
 namespace audipi {
     AudioDevice::AudioDevice() {
-        this->playback_start_position = {0, 0};
-
         unsigned int channels = 2;
         unsigned int rate = 44100;
         unsigned long period_size = 2352;
@@ -67,17 +65,14 @@ namespace audipi {
             return;
         }
 
+        if ((error = snd_pcm_hw_params_get_buffer_size(hw_params, &this->buffer_size)) < 0) {
+            printf("Failed to get buffer size: %s\n", snd_strerror(error));
+            this->pcm_handle = nullptr;
+            return;
+        }
+
         snd_pcm_sw_params_malloc(&sw_params);
         snd_pcm_sw_params_current(this->pcm_handle, sw_params);
-
-        // snd_pcm_sw_params_set_tstamp_mode(this->pcm_handle, sw_params, SND_PCM_TSTAMP_ENABLE);
-        // snd_pcm_sw_params_set_tstamp_type(this->pcm_handle, sw_params, SND_PCM_TSTAMP_TYPE_MONOTONIC);
-        //
-        // if ((error = snd_pcm_sw_params(this->pcm_handle, sw_params)) < 0) {
-        //     printf("Failed to set SW params: %s\n", snd_strerror(error));
-        //     this->pcm_handle = nullptr;
-        //     return;
-        // }
 
         printf("Playback setup successful\n");
     }
@@ -109,30 +104,8 @@ namespace audipi {
         snd_pcm_prepare(this->pcm_handle);
     }
 
-    void AudioDevice::set_playback_start_position() {
-        snd_pcm_status_t *status;
-        snd_pcm_status_malloc(&status);
-
-        snd_pcm_status(pcm_handle, status);
-        snd_pcm_status_get_tstamp(status, &this->playback_start_position);
-
-        snd_pcm_status_free(status);
-    }
-
-    long AudioDevice::get_playback_position() const {
-        snd_pcm_status_t *status;
-        snd_pcm_status_malloc(&status);
-
-        snd_pcm_status(pcm_handle, status);
-        snd_timestamp_t current_timestamp;
-        snd_pcm_status_get_tstamp(status, &current_timestamp);
-
-        long playback_position = (current_timestamp.tv_sec - this->playback_start_position.tv_sec)*44100;
-        playback_position += (current_timestamp.tv_usec - this->playback_start_position.tv_usec)*44100/1000000L;
-
-        snd_pcm_status_free(status);
-
-        return playback_position;
+    long AudioDevice::get_samples_in_buffer() const {
+        return static_cast<long>(this->buffer_size) - snd_pcm_avail_update(this->pcm_handle);
     }
 
     std::string AudioDevice::render_error(const int error_code) {

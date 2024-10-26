@@ -11,7 +11,7 @@ using snd_timestamp_t = timeval;
 namespace audipi {
     class AudioDevice {
         snd_pcm_t *pcm_handle;
-        snd_timestamp_t playback_start_position;
+        unsigned long buffer_size;
 
     public:
         AudioDevice();
@@ -23,9 +23,7 @@ namespace audipi {
 
         void prepare() const;
 
-        void set_playback_start_position();
-
-        [[nodiscard]] long get_playback_position() const;
+        [[nodiscard]] long get_samples_in_buffer() const;
 
         [[nodiscard]] static std::string render_error(int error_code);
     };

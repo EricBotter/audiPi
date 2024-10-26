@@ -108,56 +108,6 @@ int main(int argc, char *argv[]) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
-    //     audipi::msf_location current_location{0, 2, 0};
-    //
-    //     auto audio_frame = cd_rom.read_frame(current_location);
-    //     audio_device.set_playback_start_position();
-    //
-    //     size_t playback_position = 0;
-    //
-    //     // ReSharper disable once CppDFALoopConditionNotUpdated
-    //     while (keepRunning) {
-    //         if (!audio_frame) {
-    //             std::cout << "read_frame: unexpected error: " << render_error(audio_frame.error()) << std::endl;
-    //             break;
-    //         }
-    //
-    //         auto frame = audio_frame.value();
-    //
-    //         sample_buffer.push_samples(frame.raw_data.data(), frame.raw_data.size());
-    //
-    //         auto result = audio_device.enqueue_for_playback_sync(frame.raw_data.data(), frame.raw_data.size());
-    //         if (!result) {
-    //             std::cout << "enqueue_for_playback_sync: unexpected error: " <<
-    //                     audipi::AudioDevice::render_error(result.error()) << std::endl;
-    //             break;
-    //         }
-    //         if (result.value() != frame.raw_data.size()) {
-    //             std::cout << "enqueue_for_playback_sync: unexpected number of bytes written: " << result.value() <<
-    //                 " Likely buffer underrun. Resetting playback position..." << std::endl;
-    //
-    //             audio_device.set_playback_start_position();
-    //             result = audio_device.enqueue_for_playback_sync(frame.raw_data.data(), frame.raw_data.size());
-    //             if (!result) {
-    //                 std::cout << "enqueue_for_playback_sync: unexpected error after playback reset: " <<
-    //                         audipi::AudioDevice::render_error(result.error()) << std::endl;
-    //                 std::cout << "Exiting..." << std::endl;
-    //                 break;
-    //             }
-    //         }
-    //
-    //         auto new_playback_position = audio_device.get_playback_position();
-    //         std::cout << "Playback position: " << new_playback_position << "\t\t\t";
-    //
-    //         sample_buffer.discard_samples((new_playback_position - playback_position) * 4);
-    //         print_frame(sample_buffer, audipi::msf_location{0, 2, 0} + playback_position, frame.track_num);
-    //         playback_position = new_playback_position;
-    //
-    //         current_location = current_location + audipi::msf_location{0, 0, 1};
-    //         audio_frame = cd_rom.read_frame(current_location);
-    //     }
-    // }
-
     std::cout << std::endl;
     // std::cout << "Stopping CD..." << std::endl;
     //
