@@ -105,6 +105,16 @@ int main(int argc, char *argv[]) {
     // ReSharper disable once CppDFALoopConditionNotUpdated
     while (keepRunning) {
         player.tick();
+
+        auto player_status = player.get_status();
+
+        std::cout << "\rPlayer status: " << static_cast<int>(player_status.state)
+                << " - Track: " << player_status.current_track
+                << " - Location: " << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.
+                minute << ":"
+                << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.second << "."
+                << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.frame <<std::flush;
+
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 

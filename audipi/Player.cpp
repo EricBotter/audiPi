@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#define AUDIPI_DEBUG 0
+
 namespace audipi {
     Player::Player() = default;
 
@@ -16,37 +18,45 @@ namespace audipi {
     }
 
     void Player::play() {
-        this->status = PlayerStatus::PLAYING;
+        this->state = PlayerState::PLAYING;
         this->current_track = 0;
         this->tracks[current_track].reset();
         this->audio_device.prepare();
     }
 
     void Player::tick() {
-        if (this->status == PlayerStatus::ERROR) {
+        if (this->state == PlayerState::ERROR) {
             return;
         }
 
         constexpr int sufficient_samples = 44100; // 1 second
 
+#if AUDIPI_DEBUG
         printf("Player::tick %ld\n", std::chrono::system_clock::now().time_since_epoch().count());
+#endif
 
         while (sample_buffer.size() < sufficient_samples) {
+#if AUDIPI_DEBUG
             printf("  Reading %d samples from CD\n", sufficient_samples);
+#endif
             if (auto result = tracks[current_track].pop_samples(sufficient_samples)) {
                 sample_buffer.push_samples(result.value().data(), result.value().size());
             } else {
+#if AUDIPI_DEBUG
                 printf("  Error reading samples from CD\n");
-                this->status = PlayerStatus::ERROR;
+#endif
+                this->state = PlayerState::ERROR;
                 return;
             }
         }
 
-        if (this->status == PlayerStatus::PLAYING) {
+        if (this->state == PlayerState::PLAYING) {
             const auto samples_in_buffer_maybe = audio_device.get_samples_in_buffer();
             if (!samples_in_buffer_maybe) {
+#if AUDIPI_DEBUG
                 printf("  Error reading samples in audio device buffer\n");
-                this->status = PlayerStatus::ERROR;
+#endif
+                this->state = PlayerState::ERROR;
                 return;
             }
 
@@ -56,19 +66,47 @@ namespace audipi {
                 return;
             }
 
+#if AUDIPI_DEBUG
             printf("  Enqueuing %d samples for playback\n", sufficient_samples);
             printf("  Audio device buffer size: %ld\n", samples_in_buffer);
+#endif
 
             sample_data samples[sufficient_samples];
             sample_buffer.pop_samples(samples, sufficient_samples);
 
             if (const auto enqueue_for_playback_maybe = audio_device.enqueue_for_playback(
                 reinterpret_cast<u_int8_t *>(samples), sufficient_samples * 4)) {
-                printf("  Enqueued %ld samples for playback\n", enqueue_for_playback_maybe.value());
+#if AUDIPI_DEBUG
+                printf("  Enqueued %ld samples for playback\n", enqueue_for_playback_maybe.value() / 4);
+#endif
             } else {
+#if AUDIPI_DEBUG
                 printf("  Error enqueuing samples for playback\n");
-                this->status = PlayerStatus::ERROR;
+#endif
+                this->state = PlayerState::ERROR;
             }
         }
+    }
+
+    Player::player_status Player::get_status() {
+        msfs_location current_location = this->tracks[current_track].get_current_location();
+
+        auto samples_in_buffer = audio_device.get_samples_in_buffer();
+        if (samples_in_buffer) {
+            current_location = current_location - sample_buffer.size() - samples_in_buffer.value();
+        } else {
+            this->state = PlayerState::ERROR;
+            return {
+                PlayerState::ERROR,
+                0,
+                {0, 0, 0}
+            };
+        }
+
+        return {
+            .state = this->state,
+            .current_track = this->current_track,
+            .current_location_in_track = current_location
+        };
     }
 }

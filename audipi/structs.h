@@ -44,6 +44,7 @@ namespace audipi {
     msfs_location& operator-=(msfs_location& left, const msfs_location& right);
 
     msfs_location operator+(const msfs_location& left, const size_t& samples);
+    msfs_location operator-(const msfs_location& left, const size_t& samples);
 
     struct disk_toc_entry {
         u_int8_t track_num;

@@ -8,7 +8,7 @@
 #include "structs.h"
 
 namespace audipi {
-    enum class PlayerStatus {
+    enum class PlayerState {
         INIT,
         PLAYING,
         PAUSED,
@@ -21,9 +21,15 @@ namespace audipi {
         SampleBuffer sample_buffer;
         std::vector<CdPlayerTrack> tracks; // todo generalize to PlayerTrack
         size_t current_track{};
-        PlayerStatus status = PlayerStatus::INIT;
+        PlayerState state = PlayerState::INIT;
 
     public:
+        struct player_status {
+            PlayerState state;
+            size_t current_track;
+            msf_location current_location_in_track;
+        };
+
         Player();
 
         [[nodiscard]] bool is_init() const; // todo replace with get player status
@@ -37,6 +43,8 @@ namespace audipi {
         void stop();
 
         void tick();
+
+        player_status get_status();
     };
 }
 

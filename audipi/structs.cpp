@@ -112,4 +112,14 @@ namespace audipi {
         };
         return left + right;
     }
+
+    msfs_location operator-(const msfs_location &left, const size_t &samples) {
+        const msfs_location right = {
+            static_cast<u_int8_t>(samples / SAMPLE_LIMIT / FRAME_LIMIT / SEC_LIMIT),
+            static_cast<u_int8_t>(samples / SAMPLE_LIMIT / FRAME_LIMIT % SEC_LIMIT),
+            static_cast<u_int8_t>(samples / SAMPLE_LIMIT % FRAME_LIMIT),
+            static_cast<u_int16_t>(samples % SAMPLE_LIMIT)
+        };
+        return left - right;
+    }
 }

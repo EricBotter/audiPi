@@ -15,7 +15,7 @@ namespace audipi {
         samples.reserve(array_size / 4);
 
         for (size_t i = 0; i < array_size; i += 4) {
-            samples.push_back({
+            samples.emplace_back(sample_data{
                 data[i], data[i + 1], data[i + 2], data[i + 3]
             });
         }
