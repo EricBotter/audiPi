@@ -5,6 +5,7 @@
 #include <sstream>
 #include <thread>
 #include <chrono>
+#include <algorithm>
 
 #include "audipi/AudioDevice.h"
 #include "audipi/CdRom.h"
