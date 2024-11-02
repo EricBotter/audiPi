@@ -12,6 +12,8 @@
 #include "audipi/Player.h"
 #include "audipi/SampleBuffer.h"
 
+#include "render/curses/curses_main.h"
+
 std::string render_error(const int error_num) {
     std::ostringstream ss;
     ss << strerror(error_num) << " (" << error_num << ")";
@@ -24,12 +26,15 @@ void intHandler(int ignored) {
     keepRunning = 0;
 }
 
-snd_pcm_t *setup_audio();
-
 void print_frame(const audipi::SampleBuffer &sample_buffer, const audipi::msf_location &current_location,
                  size_t track_num);
 
 int main(int argc, char *argv[]) {
+
+    if (argc > 1 && !strcmp(argv[1], "--ncurses")) {
+        return curses_main();
+    }
+
     signal(SIGINT, intHandler);
     signal(SIGTERM, intHandler);
 

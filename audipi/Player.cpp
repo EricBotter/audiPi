@@ -2,8 +2,6 @@
 
 #include <chrono>
 
-#define AUDIPI_DEBUG 0
-
 namespace audipi {
     Player::Player() = default;
 

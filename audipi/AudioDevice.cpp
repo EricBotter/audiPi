@@ -67,7 +67,9 @@ namespace audipi {
         snd_pcm_sw_params_malloc(&sw_params);
         snd_pcm_sw_params_current(this->pcm_handle, sw_params);
 
+#if AUDIPI_DEBUG
         printf("Playback setup successful\n");
+#endif
     }
 
     AudioDevice::~AudioDevice() {
