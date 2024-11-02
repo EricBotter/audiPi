@@ -17,7 +17,7 @@ namespace audipi {
 
         void reset();
 
-        [[nodiscard]] std::string get_track_name() const;
+        [[nodiscard]] std::string get_track_name() const; // todo add tags (artist, album...)
 
         [[nodiscard]] std::expected<std::vector<sample_data>, int> pop_samples(size_t num_samples);
 

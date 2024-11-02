@@ -149,12 +149,6 @@ int main(int argc, char *argv[]) {
         std::cout << "eject: unexpected error: " << render_error(result.error()) << std::endl;
     }
 
-    if (auto result = cd_rom.get_drive_status()) {
-        std::cout << "Drive status: " << static_cast<int>(result.value()) << std::endl;
-    } else {
-        std::cout << "get_drive_status: unexpected error: " << render_error(result.error()) << std::endl;
-    }
-
     return 0;
 }
 

@@ -39,7 +39,7 @@ namespace audipi {
 
         void play();
 
-        // void pause();
+        void pause();
 
         void stop();
 

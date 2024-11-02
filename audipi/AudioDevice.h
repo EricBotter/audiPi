@@ -23,6 +23,12 @@ namespace audipi {
 
         void prepare() const;
 
+        void pause() const;
+
+        void resume() const;
+
+        void reset() const;
+
         [[nodiscard]] std::expected<unsigned long, long> get_samples_in_buffer() const;
 
         [[nodiscard]] static std::string render_error(int error_code);

@@ -18,10 +18,31 @@ namespace audipi {
     }
 
     void Player::play() {
-        this->state = PlayerState::PLAYING;
+        if (this->state == PlayerState::PAUSED) {
+            this->state = PlayerState::PAUSED;
+            this->audio_device.resume();
+        } else {
+            this->state = PlayerState::PLAYING;
+            this->current_track = 0;
+            this->tracks[current_track].reset();
+            this->audio_device.prepare();
+        }
+    }
+
+    void Player::pause() {
+        if (this->state == PlayerState::PLAYING) {
+            this->state = PlayerState::PAUSED;
+            this->audio_device.pause();
+        }
+    }
+
+    void Player::stop() {
+        if (this->state == PlayerState::PLAYING || this->state == PlayerState::PAUSED) {
+            this->tracks[current_track].reset();
+        }
+        this->state = PlayerState::STOPPED;
         this->current_track = 0;
-        this->tracks[current_track].reset();
-        this->audio_device.prepare();
+        this->audio_device.reset();
     }
 
     void Player::tick() {

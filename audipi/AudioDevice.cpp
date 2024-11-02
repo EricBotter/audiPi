@@ -100,6 +100,20 @@ namespace audipi {
         snd_pcm_prepare(this->pcm_handle);
     }
 
+    void AudioDevice::pause() const {
+        if (snd_pcm_pause(this->pcm_handle, 1)) {
+            printf("Error while pausing!");
+        }
+    }
+
+    void AudioDevice::resume() const {
+        snd_pcm_pause(this->pcm_handle, 0);
+    }
+
+    void AudioDevice::reset() const {
+        snd_pcm_drop(this->pcm_handle);
+    }
+
     std::expected<unsigned long, long> AudioDevice::get_samples_in_buffer() const {
         snd_pcm_sframes_t pcm_avail_update = snd_pcm_avail_update(this->pcm_handle);
         if (pcm_avail_update < 0) {
