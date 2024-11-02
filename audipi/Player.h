@@ -43,6 +43,10 @@ namespace audipi {
 
         void stop();
 
+        void next_track();
+
+        void prev_track();
+
         void tick();
 
         player_status get_status();

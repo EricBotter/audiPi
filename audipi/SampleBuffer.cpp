@@ -55,4 +55,8 @@ namespace audipi {
         this->head = i;
         this->buffer = new_buffer;
     }
+
+    void SampleBuffer::clear() {
+        this->tail = this->head = 0;
+    }
 }

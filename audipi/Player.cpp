@@ -16,8 +16,12 @@ namespace audipi {
     }
 
     void Player::play() {
+        if (this->state == PlayerState::PLAYING) {
+            return;
+        }
+
         if (this->state == PlayerState::PAUSED) {
-            this->state = PlayerState::PAUSED;
+            this->state = PlayerState::PLAYING;
             this->audio_device.resume();
         } else {
             this->state = PlayerState::PLAYING;
@@ -41,6 +45,20 @@ namespace audipi {
         this->state = PlayerState::STOPPED;
         this->current_track = 0;
         this->audio_device.reset();
+    }
+
+    void Player::next_track() {
+        if (current_track >= tracks.size() - 1)
+            return;
+        this->sample_buffer.clear();
+        this->tracks[current_track++].reset();
+    }
+
+    void Player::prev_track() {
+        if (current_track <= 0)
+            return;
+        this->sample_buffer.clear();
+        this->tracks[current_track--].reset();
     }
 
     void Player::tick() {
@@ -79,9 +97,7 @@ namespace audipi {
                 return;
             }
 
-            const auto samples_in_buffer = samples_in_buffer_maybe.value();
-
-            if (samples_in_buffer > sufficient_samples) {
+            if (const auto samples_in_buffer = samples_in_buffer_maybe.value(); samples_in_buffer > sufficient_samples) {
                 return;
             }
 

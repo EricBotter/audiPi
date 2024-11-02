@@ -81,14 +81,6 @@ int curses_main() {
 
         const int cur_row = getcury(stdscr);
 
-        // std::cout << "\rPlayer status: " << static_cast<int>(player_status.state)
-        //         << " - Track[" << std::setfill('0') << std::setw(2) << player_status.current_track_index
-        //         << "]: " << player_status.current_track_name
-        //         << " - Location: " << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.
-        //         minute << ":"
-        //         << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.second << "."
-        //         << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.frame <<std::flush;
-
         printw("Player status: ");
         printw(std::to_string(static_cast<int>(state)).c_str());
         printw(" - Track[");
@@ -115,6 +107,12 @@ int curses_main() {
             if (read_char == 's') {
                 player.stop();
                 keep_running = 0;
+            }
+            if (read_char == KEY_RIGHT) {
+                player.next_track();
+            }
+            if (read_char == KEY_LEFT) {
+                player.prev_track();
             }
         }
 

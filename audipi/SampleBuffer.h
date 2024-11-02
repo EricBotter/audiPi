@@ -23,6 +23,8 @@ namespace audipi {
         void read_samples(sample_data *samples, size_t count, size_t offset) const;
 
         void discard_samples(size_t count);
+
+        void clear();
     };
 }
 

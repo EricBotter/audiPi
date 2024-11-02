@@ -12,8 +12,7 @@ add_compile_definitions(AUDIPI_DEBUG=0)
 
 add_library(render_curses render/curses/curses_main.cpp)
 
-add_executable(audipi main.cpp
-        main.cpp
+add_library(audipi_lib
         audipi/CdRom.cpp
         audipi/Player.cpp
         audipi/structs.cpp
@@ -22,6 +21,8 @@ add_executable(audipi main.cpp
         audipi/PlayerTrack.cpp
         audipi/util.cpp)
 
+add_executable(audipi main.cpp main.cpp)
+
 target_link_libraries(render_curses ${CURSES_LIBRARIES})
 
-target_link_libraries(audipi render_curses ALSA::ALSA)
+target_link_libraries(audipi audipi_lib render_curses ALSA::ALSA)
