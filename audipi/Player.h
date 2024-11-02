@@ -26,7 +26,8 @@ namespace audipi {
     public:
         struct player_status {
             PlayerState state;
-            size_t current_track;
+            size_t current_track_index;
+            std::string current_track_name; // todo implement tags (artist, album...)
             msf_location current_location_in_track;
         };
 

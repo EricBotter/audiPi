@@ -91,21 +91,22 @@ namespace audipi {
     Player::player_status Player::get_status() {
         msfs_location current_location = this->tracks[current_track].get_current_location();
 
-        auto samples_in_buffer = audio_device.get_samples_in_buffer();
-        if (samples_in_buffer) {
+        if (const auto samples_in_buffer = audio_device.get_samples_in_buffer()) {
             current_location = current_location - sample_buffer.size() - samples_in_buffer.value();
         } else {
             this->state = PlayerState::ERROR;
             return {
                 PlayerState::ERROR,
                 0,
+                "Error",
                 {0, 0, 0}
             };
         }
 
         return {
             .state = this->state,
-            .current_track = this->current_track,
+            .current_track_index = this->current_track,
+            .current_track_name = this->tracks[current_track].get_track_name(),
             .current_location_in_track = current_location
         };
     }

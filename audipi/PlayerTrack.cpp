@@ -1,5 +1,7 @@
 #include "PlayerTrack.h"
 
+#include "util.h"
+
 namespace audipi {
     CdPlayerTrack::CdPlayerTrack(CdRom &cd_rom, const disk_toc_entry &track)
         : cd_rom(cd_rom), track(track), current_location{0, 0, 0, 0} {
@@ -7,6 +9,11 @@ namespace audipi {
 
     void CdPlayerTrack::reset() {
         this->current_location = {0, 0, 0, 0};
+    }
+
+    std::string CdPlayerTrack::get_track_name() const {
+        return std::string("CD Track ")
+            + left_pad_string(std::to_string(this->track.track_num), 2, '0');
     }
 
     template<size_t array_size>

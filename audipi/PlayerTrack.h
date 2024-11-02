@@ -17,6 +17,8 @@ namespace audipi {
 
         void reset();
 
+        [[nodiscard]] std::string get_track_name() const;
+
         [[nodiscard]] std::expected<std::vector<sample_data>, int> pop_samples(size_t num_samples);
 
         [[nodiscard]] msfs_location get_current_location() const {

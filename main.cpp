@@ -41,6 +41,11 @@ int main(int argc, char *argv[]) {
     }
 
     if (auto drive_status_result = cd_rom.get_drive_status()) {
+        if (drive_status_result.value() == audipi::drive_status::no_disk) {
+            std::cout << "No disc in disc drive!" << std::endl
+                    << "Exiting..." << std::endl;
+            return 0;
+        }
         if (drive_status_result.value() != audipi::drive_status::disc_ok) {
             std::cout << "Drive status not OK: " << static_cast<int>(drive_status_result.value()) << std::endl
                     << "Exiting..." << std::endl;
@@ -110,7 +115,8 @@ int main(int argc, char *argv[]) {
         auto player_status = player.get_status();
 
         std::cout << "\rPlayer status: " << static_cast<int>(player_status.state)
-                << " - Track: " << player_status.current_track
+                << " - Track[" << std::setfill('0') << std::setw(2) << player_status.current_track_index
+                << "]: " << player_status.current_track_name
                 << " - Location: " << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.
                 minute << ":"
                 << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.second << "."
