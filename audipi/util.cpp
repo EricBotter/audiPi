@@ -7,4 +7,15 @@ namespace audipi {
             str.insert(0, num - str.size(), paddingChar);
         return std::move(str);
     }
+
+    std::string msf_location_to_string(msf_location location) {
+        return left_pad_string(std::to_string(+location.minute), 2, '0')
+               + ":" + left_pad_string(std::to_string(+location.second), 2, '0')
+               + ":" + left_pad_string(std::to_string(+location.frame), 2, '0');
+    }
+
+    std::string msfs_location_to_string(msfs_location location) {
+        return msf_location_to_string(location)
+               + "." + left_pad_string(std::to_string(+location.samples), 3, '0');
+    }
 }

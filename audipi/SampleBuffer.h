@@ -24,7 +24,7 @@ namespace audipi {
 
         void discard_samples(size_t count);
 
-        void clear();
+        void discard();
     };
 }
 

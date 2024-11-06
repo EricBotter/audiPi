@@ -50,14 +50,14 @@ namespace audipi {
     void Player::next_track() {
         if (current_track >= tracks.size() - 1)
             return;
-        this->sample_buffer.clear();
+        this->sample_buffer.discard();
         this->tracks[current_track++].reset();
     }
 
     void Player::prev_track() {
         if (current_track <= 0)
             return;
-        this->sample_buffer.clear();
+        this->sample_buffer.discard();
         this->tracks[current_track--].reset();
     }
 

@@ -56,7 +56,7 @@ namespace audipi {
         this->buffer = new_buffer;
     }
 
-    void SampleBuffer::clear() {
+    void SampleBuffer::discard() {
         this->tail = this->head = 0;
     }
 }

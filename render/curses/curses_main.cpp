@@ -71,8 +71,6 @@ int curses_main() {
 
     player.enqueue_cd(cd_rom, disk_toc.value());
 
-    player.play();
-
     int keep_running = 1;
     while (keep_running) {
         player.tick();
@@ -88,11 +86,7 @@ int curses_main() {
         printw("]: ");
         printw(current_track_name.c_str());
         printw(" - Location: ");
-        printw(audipi::left_pad_string(std::to_string(+current_location_in_track.minute), 2, '0').c_str());
-        printw(":");
-        printw(audipi::left_pad_string(std::to_string(+current_location_in_track.second), 2, '0').c_str());
-        printw(":");
-        printw(audipi::left_pad_string(std::to_string(+current_location_in_track.frame), 2, '0').c_str());
+        printw(audipi::msf_location_to_string(current_location_in_track).c_str());
         printw("   ");
 
         move(cur_row, 0);
