@@ -86,7 +86,7 @@ int curses_main() {
         printw("]: ");
         printw(current_track_name.c_str());
         printw(" - Location: ");
-        printw(audipi::msf_location_to_string(current_location_in_track).c_str());
+        printw(msf_location_to_string(current_location_in_track).c_str());
         printw("   ");
 
         move(cur_row, 0);
