@@ -13,6 +13,7 @@
 #include "audipi/SampleBuffer.h"
 
 #include "render/curses/curses_main.h"
+#include "render/qt/qt_main.h"
 
 std::string render_error(const int error_num) {
     std::ostringstream ss;
@@ -31,8 +32,12 @@ void print_frame(const audipi::SampleBuffer &sample_buffer, const audipi::msf_lo
 
 int main(int argc, char *argv[]) {
 
-    if (argc > 1 && !strcmp(argv[1], "--ncurses")) {
+    if (argc > 1 && strcmp(argv[1], "--ncurses") == 0) {
         return curses_main();
+    }
+    if (argc > 1 && strcmp(argv[1], "--qt") == 0) {
+        printf("Entering Qt application...");
+        return qt_main(argc, argv);
     }
 
     signal(SIGINT, intHandler);
