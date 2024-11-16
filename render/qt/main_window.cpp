@@ -13,7 +13,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_AudiPi)
     ui->setupUi(this);
     main_timer = new QTimer(this);
 
-    connect(ui->playPauseButton, &QPushButton::clicked, this, &MainWindow::playPause); // NOLINT(*-unused-return-value)
+    connect(ui->playPauseButton, &QPushButton::clicked, this, &MainWindow::play_pause); // NOLINT(*-unused-return-value)
+    connect(ui->nextButton, &QPushButton::clicked, this, &MainWindow::next_track); // NOLINT(*-unused-return-value)
+    connect(ui->prevButton, &QPushButton::clicked, this, &MainWindow::prev_track); // NOLINT(*-unused-return-value)
 
     connect(main_timer, &QTimer::timeout, this, &MainWindow::tick); // NOLINT(*-unused-return-value)
 
@@ -54,13 +56,27 @@ void MainWindow::initialize() const {
     main_timer->start(std::chrono::milliseconds(UPDATE_INTERVAL_MS)); // 50 UPS
 }
 
-void MainWindow::playPause() const {
+void MainWindow::play_pause() const {
     if (player->get_state() == audipi::PlayerState::PLAYING) {
         player->pause();
     } else {
         player->play();
     }
 }
+
+void MainWindow::next_track() const {
+    player->next_track();
+}
+
+void MainWindow::prev_track() const {
+    player->prev_track();
+}
+
+// void MainWindow::onPlaylistWidgetCurrentRowChanged(int currentRow) const {
+//     player->select_track(currentRow);
+// }
+
+
 
 void MainWindow::tick() const {
     player->tick();

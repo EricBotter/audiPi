@@ -19,7 +19,13 @@ public:
 
     void initialize() const;
 
-    void playPause() const;
+    void play_pause() const;
+
+    void next_track() const;
+
+    void prev_track() const;
+
+    void stop() const;
 
     void tick() const;
 
