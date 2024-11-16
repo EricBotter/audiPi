@@ -49,6 +49,7 @@ namespace audipi {
 
         void tick();
 
+        [[nodiscard]] PlayerState get_state() const;
         player_status get_status();
     };
 }

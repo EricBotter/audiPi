@@ -11,6 +11,7 @@
 #include "audipi/CdRom.h"
 #include "audipi/Player.h"
 #include "audipi/SampleBuffer.h"
+#include "audipi/util.h"
 
 #include "render/curses/curses_main.h"
 #include "render/qt/qt_main.h"
@@ -127,20 +128,17 @@ int main(int argc, char *argv[]) {
         std::cout << "\rPlayer status: " << static_cast<int>(player_status.state)
                 << " - Track[" << std::setfill('0') << std::setw(2) << player_status.current_track_index
                 << "]: " << player_status.current_track_name
-                << " - Location: " << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.
-                minute << ":"
-                << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.second << "."
-                << std::setfill('0') << std::setw(2) << +player_status.current_location_in_track.frame <<std::flush;
+                << " - Location: " << msf_location_to_string(player_status.current_location_in_track) << std::flush;
 
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 
     std::cout << std::endl;
-    // std::cout << "Stopping CD..." << std::endl;
-    //
-    // if (auto result = cd_rom.stop(); !result) {
-    //     std::cout << "stop: unexpected error: " << render_error(result.error()) << std::endl;
-    // }
+    std::cout << "Stopping CD..." << std::endl;
+
+    if (auto result = cd_rom.stop(); !result) {
+        std::cout << "stop: unexpected error: " << render_error(result.error()) << std::endl;
+    }
 
     return 0;
 

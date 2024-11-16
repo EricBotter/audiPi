@@ -103,7 +103,7 @@ namespace audipi {
 
 #if AUDIPI_DEBUG
             printf("  Enqueuing %d samples for playback\n", sufficient_samples);
-            printf("  Audio device buffer size: %ld\n", samples_in_buffer);
+            printf("  Audio device buffer size: %ld\n", samples_in_buffer_maybe.value());
 #endif
 
             sample_data samples[sufficient_samples];
@@ -121,6 +121,10 @@ namespace audipi {
                 this->state = PlayerState::ERROR;
             }
         }
+    }
+
+    PlayerState Player::get_state() const {
+        return state;
     }
 
     Player::player_status Player::get_status() {

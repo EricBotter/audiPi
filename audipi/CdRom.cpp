@@ -27,7 +27,7 @@ cdrom_addr msf_location_to_cdrom_addr(const audipi::msf_location &location) {
 
 namespace audipi {
     CdRom::CdRom(const std::string &fd_path) {
-        this->cdrom_fd = open("/dev/cdrom", O_RDONLY | O_NONBLOCK);
+        this->cdrom_fd = open(fd_path.c_str(), O_RDONLY | O_NONBLOCK);
     }
 
     bool CdRom::is_init() const {

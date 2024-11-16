@@ -15,10 +15,11 @@ qt_standard_project_setup()
 
 add_compile_definitions(AUDIPI_DEBUG=0)
 
-qt_add_library(render_curses render/curses/curses_main.cpp)
-qt_add_library(render_qt render/qt/qt_main.cpp render/qt/main_window.ui)
+add_library(render_curses render/curses/curses_main.cpp)
+add_library(render_qt render/qt/qt_main.cpp render/qt/main_window.ui
+        render/qt/main_window.cpp)
 
-qt_add_library(audipi_lib
+add_library(audipi_lib
         audipi/CdRom.cpp
         audipi/Player.cpp
         audipi/structs.cpp
@@ -27,7 +28,7 @@ qt_add_library(audipi_lib
         audipi/PlayerTrack.cpp
         audipi/util.cpp)
 
-qt_add_executable(audipi main.cpp main.cpp)
+add_executable(audipi main.cpp main.cpp)
 
 target_link_libraries(render_curses PRIVATE ${CURSES_LIBRARIES})
 target_link_libraries(render_qt PRIVATE Qt6::Core Qt6::Widgets)
