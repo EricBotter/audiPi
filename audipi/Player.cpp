@@ -2,6 +2,10 @@
 
 #include <chrono>
 
+#if AUDIPI_DEBUG
+#include "util.h"
+#endif
+
 namespace audipi {
     Player::Player() = default;
 
@@ -74,7 +78,8 @@ namespace audipi {
 
         while (sample_buffer.size() < sufficient_samples) {
 #if AUDIPI_DEBUG
-            printf("  Reading %d samples from CD\n", sufficient_samples);
+            printf("  Reading %d samples from CD at %s\n", sufficient_samples, msfs_location_to_string(this
+                ->tracks[current_track].get_current_location()).c_str());
 #endif
             if (auto result = tracks[current_track].pop_samples(sufficient_samples)) {
                 sample_buffer.push_samples(result.value().data(), result.value().size());

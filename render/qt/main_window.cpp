@@ -55,7 +55,7 @@ void MainWindow::initialize() const {
 }
 
 void MainWindow::playPause() const {
-    if (const auto state = player->get_state(); state == audipi::PlayerState::PLAYING) {
+    if (player->get_state() == audipi::PlayerState::PLAYING) {
         player->pause();
     } else {
         player->play();

@@ -9,7 +9,7 @@
 namespace audipi {
     class CdPlayerTrack {
         CdRom &cd_rom;
-        const disk_toc_entry &track;
+        const disk_toc_entry track;
         msfs_location current_location;
 
     public:
