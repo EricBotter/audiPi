@@ -56,6 +56,7 @@ namespace audipi {
             return;
         this->sample_buffer.discard();
         this->tracks[current_track++].reset();
+        this->tracks[current_track].reset();
     }
 
     void Player::prev_track() {
@@ -63,6 +64,13 @@ namespace audipi {
             return;
         this->sample_buffer.discard();
         this->tracks[current_track--].reset();
+        this->tracks[current_track].reset();
+    }
+
+    void Player::clear_playlist() {
+        this->stop();
+        this->tracks.clear();
+        this->current_track = 0;
     }
 
     void Player::tick() {
@@ -153,5 +161,15 @@ namespace audipi {
             .current_track_name = this->tracks[current_track].get_track_name(),
             .current_location_in_track = current_location
         };
+    }
+
+    std::expected<void, std::string> Player::jump_to_track(const int track_idx) {
+        if (track_idx < 0 || track_idx >= this->tracks.size()) {
+            return std::unexpected("Out of bounds");
+        }
+        this->tracks[current_track].reset();
+        this->current_track = track_idx;
+        this->tracks[current_track].reset();
+        return {};
     }
 }

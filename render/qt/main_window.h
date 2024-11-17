@@ -1,6 +1,7 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
+#include <QListWidget>
 #include <QMainWindow>
 
 #include "../../audipi/Player.h"
@@ -25,7 +26,11 @@ public:
 
     void prev_track() const;
 
+    void track_selected(QListWidgetItem *item) const;
+
     void stop() const;
+
+    void eject() const;
 
     void tick() const;
 

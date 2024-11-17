@@ -16,6 +16,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_AudiPi)
     connect(ui->playPauseButton, &QPushButton::clicked, this, &MainWindow::play_pause); // NOLINT(*-unused-return-value)
     connect(ui->nextButton, &QPushButton::clicked, this, &MainWindow::next_track); // NOLINT(*-unused-return-value)
     connect(ui->prevButton, &QPushButton::clicked, this, &MainWindow::prev_track); // NOLINT(*-unused-return-value)
+    connect(ui->stopButton, &QPushButton::clicked, this, &MainWindow::stop); // NOLINT(*-unused-return-value)
+    connect(ui->ejectButton, &QPushButton::clicked, this, &MainWindow::eject); // NOLINT(*-unused-return-value)
+
+    connect(ui->playlistWidget, &QListWidget::itemClicked, this, &MainWindow::track_selected); // NOLINT(*-unused-return-value)
 
     connect(main_timer, &QTimer::timeout, this, &MainWindow::tick); // NOLINT(*-unused-return-value)
 
@@ -51,16 +55,18 @@ void MainWindow::initialize() const {
         ui->playlistWidget->addItem(QString(label.c_str()));
     }
 
-    player->play();
-
     main_timer->start(std::chrono::milliseconds(UPDATE_INTERVAL_MS)); // 50 UPS
 }
 
 void MainWindow::play_pause() const {
     if (player->get_state() == audipi::PlayerState::PLAYING) {
         player->pause();
+        ui->playPauseButton->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackStart));
+        ui->playPauseButton->setText("Play");
     } else {
         player->play();
+        ui->playPauseButton->setIcon(QIcon::fromTheme(QIcon::ThemeIcon::MediaPlaybackPause));
+        ui->playPauseButton->setText("Pause");
     }
 }
 
@@ -72,11 +78,24 @@ void MainWindow::prev_track() const {
     player->prev_track();
 }
 
-// void MainWindow::onPlaylistWidgetCurrentRowChanged(int currentRow) const {
-//     player->select_track(currentRow);
-// }
+void MainWindow::track_selected(QListWidgetItem *item) const {
+    auto trackIdx = item->text().split(" ")[1].toInt() - 1;
 
+    player->jump_to_track(trackIdx);
+}
 
+void MainWindow::stop() const {
+    player->stop();
+}
+
+void MainWindow::eject() const {
+    player->clear_playlist();
+    ui->playlistWidget->clear();
+    if (!cd_rom->eject()) {
+        ui->ejectButton->setEnabled(false);
+        ui->ejectButton->setText("Eject not supported");
+    }
+}
 
 void MainWindow::tick() const {
     player->tick();
@@ -88,8 +107,9 @@ void MainWindow::tick() const {
         ui->trackLabel->setText(msf_location_to_string(current_location_in_track).c_str());
     } else if (state == audipi::PlayerState::ERROR) {
         ui->statusLabel->setText("Error!");
+        ui->trackLabel->setText("");
     } else {
         ui->statusLabel->setText("Ready");
+        ui->trackLabel->setText("");
     }
-    ui->trackLabel->setText("");
 }

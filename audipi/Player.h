@@ -47,10 +47,14 @@ namespace audipi {
 
         void prev_track();
 
+        void clear_playlist();
+
         void tick();
 
         [[nodiscard]] PlayerState get_state() const;
         player_status get_status();
+
+        std::expected<void, std::string> jump_to_track(int track_idx);
     };
 }
 
