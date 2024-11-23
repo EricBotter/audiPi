@@ -1,6 +1,9 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
+#include <atomic>
+#include <thread>
+
 #include "AudioDevice.h"
 #include "CdRom.h"
 #include "PlayerTrack.h"
@@ -21,8 +24,9 @@ namespace audipi {
         std::vector<CdPlayerTrack> tracks; // todo generalize to PlayerTrack
         size_t current_track{};
         PlayerState state = PlayerState::STOPPED;
-        bool filling_buffer = false;
+        std::atomic_flag filling_buffer = false;
         std::string error_cause;
+        std::thread track_reader_thread;
 
         void set_error(const char* error);
 
@@ -50,6 +54,8 @@ namespace audipi {
 
         void prev_track();
 
+        std::expected<void, std::string> jump_to_track(int track_idx);
+
         void clear_playlist();
 
         void tick();
@@ -57,9 +63,8 @@ namespace audipi {
         [[nodiscard]] const std::string& get_error_cause() const;
 
         [[nodiscard]] PlayerState get_state() const;
-        player_status get_status();
 
-        std::expected<void, std::string> jump_to_track(int track_idx);
+        player_status get_status();
     };
 }
 
