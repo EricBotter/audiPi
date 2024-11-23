@@ -1,5 +1,6 @@
 #ifndef SAMPLEBUFFER_H
 #define SAMPLEBUFFER_H
+#include <mutex>
 #include <vector>
 
 #include "structs.h"
@@ -7,10 +8,11 @@
 namespace audipi {
     class SampleBuffer {
         std::vector<sample_data> buffer;
-        size_t head;
-        size_t tail;
+        size_t head = 0;
+        size_t tail = 0;
         void reallocate_buffer();
         [[nodiscard]] std::size_t available_space() const;
+        mutable std::mutex mutex;
 
     public:
         SampleBuffer();
