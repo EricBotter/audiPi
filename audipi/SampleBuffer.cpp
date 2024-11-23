@@ -1,5 +1,7 @@
 #include "SampleBuffer.h"
 
+#include <cstdio>
+
 #include "structs.h"
 
 namespace audipi {
@@ -13,11 +15,19 @@ namespace audipi {
         return (this->buffer.size() + this->head - this->tail) % this->buffer.size();
     }
 
+    std::size_t SampleBuffer::available_space() const {
+        ssize_t used = static_cast<ssize_t>(this->head) - static_cast<ssize_t>(this->tail);
+        if (used < 0) {
+            used += static_cast<ssize_t>(this->buffer.size());
+        }
+        return this->buffer.size() - used;
+    }
+
     void SampleBuffer::push_samples(const sample_data *samples, const size_t count) {
-        size_t size = this->buffer.size() - this->head + this->tail;
-        while (size <= count) {
+        size_t available_space = this->available_space();
+        while (available_space <= count) {
             this->reallocate_buffer();
-            size = this->buffer.size() - this->head + this->tail;
+            available_space = this->available_space();
         }
 
         for (size_t i = 0; i < count; ++i) { // todo: optimize
@@ -44,6 +54,9 @@ namespace audipi {
     }
 
     void SampleBuffer::reallocate_buffer() {
+#if AUDIPI_DEBUG
+        printf("    Reallocating buffer from %lu to %lu\n", this->buffer.size(), this->buffer.size() * 2);
+#endif
         std::vector<sample_data> new_buffer(this->buffer.size() * 2);
         size_t i = 0;
         while (this->tail != this->head) {

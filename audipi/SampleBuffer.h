@@ -10,6 +10,7 @@ namespace audipi {
         size_t head;
         size_t tail;
         void reallocate_buffer();
+        [[nodiscard]] std::size_t available_space() const;
 
     public:
         SampleBuffer();

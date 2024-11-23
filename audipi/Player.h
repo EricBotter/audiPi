@@ -9,7 +9,6 @@
 
 namespace audipi {
     enum class PlayerState {
-        INIT,
         PLAYING,
         PAUSED,
         STOPPED,
@@ -21,7 +20,11 @@ namespace audipi {
         SampleBuffer sample_buffer;
         std::vector<CdPlayerTrack> tracks; // todo generalize to PlayerTrack
         size_t current_track{};
-        PlayerState state = PlayerState::INIT;
+        PlayerState state = PlayerState::STOPPED;
+        bool filling_buffer = false;
+        std::string error_cause;
+
+        void set_error(const char* error);
 
     public:
         struct player_status {
@@ -50,6 +53,8 @@ namespace audipi {
         void clear_playlist();
 
         void tick();
+
+        [[nodiscard]] const std::string& get_error_cause() const;
 
         [[nodiscard]] PlayerState get_state() const;
         player_status get_status();

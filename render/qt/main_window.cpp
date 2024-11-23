@@ -107,7 +107,7 @@ void MainWindow::tick() const {
         ui->trackLabel->setText(msf_location_to_string(current_location_in_track).c_str());
     } else if (state == audipi::PlayerState::ERROR) {
         ui->statusLabel->setText("Error!");
-        ui->trackLabel->setText("");
+        ui->trackLabel->setText(player->get_error_cause().c_str());
     } else {
         ui->statusLabel->setText("Ready");
         ui->trackLabel->setText("");
