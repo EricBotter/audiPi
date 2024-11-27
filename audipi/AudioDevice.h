@@ -1,8 +1,10 @@
 #ifndef AUDIODEVICE_H
 #define AUDIODEVICE_H
-#include <cstdint>
+
 #include <expected>
 #include <string>
+
+#include "structs.h"
 
 // Forward declaration of the ALSA types, expected to be present at link time
 using snd_pcm_t = struct _snd_pcm; // NOLINT(*-reserved-identifier)
@@ -19,7 +21,7 @@ namespace audipi {
 
         [[nodiscard]] bool is_init() const;
 
-        [[nodiscard]] std::expected<long, int> enqueue_for_playback(const uint8_t *buffer, std::size_t size) const;
+        [[nodiscard]] std::expected<long, int> enqueue_for_playback(const sample_data *buffer, std::size_t size) const;
 
         void prepare() const;
 

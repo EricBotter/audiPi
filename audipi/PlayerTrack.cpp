@@ -30,7 +30,7 @@ namespace audipi {
         return samples;
     }
 
-    std::expected<std::vector<sample_data>, int> CdPlayerTrack::pop_samples(size_t num_samples) {
+    std::expected<std::vector<sample_data>, int> CdPlayerTrack::pop_samples(const size_t num_samples) {
         std::vector<sample_data> samples;
 
         if (current_location.samples != 0) {

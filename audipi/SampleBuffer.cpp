@@ -9,9 +9,13 @@ namespace audipi {
         this->buffer = std::vector<sample_data>(44100); // 1 second of 44.1kHz stereo audio
     }
 
+    std::size_t SampleBuffer::internal_size() const {
+        return (this->buffer.size() + this->head - this->tail) % this->buffer.size();
+    }
+
     size_t SampleBuffer::size() const {
         std::lock_guard lg(this->mutex);
-        return (this->buffer.size() + this->head - this->tail) % this->buffer.size();
+        return internal_size();
     }
 
     void SampleBuffer::push_samples(const sample_data *samples, const size_t count) {
@@ -29,13 +33,15 @@ namespace audipi {
         }
     }
 
-    void SampleBuffer::pop_samples(sample_data *samples, const size_t count) {
+    size_t SampleBuffer::pop_samples(sample_data *samples, const size_t count) {
         std::lock_guard lg(this->mutex);
 
-        for (size_t i = 0; i < count; ++i) { // todo: optimize
+        const size_t actual = std::min(count, this->internal_size());
+        for (size_t i = 0; i < actual; ++i) { // todo: optimize
             samples[i] = this->buffer[this->tail];
             this->tail = (this->tail + 1) % this->buffer.size();
         }
+        return actual;
     }
 
     void SampleBuffer::read_samples(sample_data *samples, const size_t count, const size_t offset) const {

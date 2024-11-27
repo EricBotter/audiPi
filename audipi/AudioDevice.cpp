@@ -81,12 +81,12 @@ namespace audipi {
         return this->pcm_handle != nullptr;
     }
 
-    std::expected<long, int> AudioDevice::enqueue_for_playback(const uint8_t *buffer, const std::size_t size) const {
-        if (size % 4) {
-            return std::unexpected(0);
+    std::expected<long, int> AudioDevice::enqueue_for_playback(const sample_data *buffer, const size_t size) const {
+        if (size == 0) {
+            return 0;
         }
 
-        const auto written = snd_pcm_writei(this->pcm_handle, buffer, size/4);
+        const auto written = snd_pcm_writei(this->pcm_handle, buffer, size);
         if (written == -EAGAIN) {
             return 0;
         }
@@ -95,7 +95,7 @@ namespace audipi {
                 return std::unexpected(recover);
             }
         }
-        return written * 4;
+        return written;
     }
 
     void AudioDevice::prepare() const {
@@ -114,6 +114,7 @@ namespace audipi {
 
     void AudioDevice::reset() const {
         snd_pcm_drop(this->pcm_handle);
+        snd_pcm_prepare(this->pcm_handle);
     }
 
     std::expected<unsigned long, long> AudioDevice::get_samples_in_buffer() const {

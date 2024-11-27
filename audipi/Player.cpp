@@ -14,7 +14,7 @@ const audipi::Player::player_status ERROR_PLAYER_STATUS = {
 };
 
 constexpr int sufficient_samples = 44100;
-constexpr int internal_high_threshold_samples = 44100 * 45;
+constexpr int internal_high_threshold_samples = 44100 * 60 * 2;
 
 namespace audipi {
     void Player::set_error(const char *error) {
@@ -28,18 +28,21 @@ namespace audipi {
                 if (filling_buffer.test()) {
                     if (sample_buffer.size() < internal_high_threshold_samples) {
 #if AUDIPI_DEBUG
-                    printf("  Reading %d samples from CD at %s\n", sufficient_samples, msfs_location_to_string(this
-                        ->tracks[current_track].get_current_location()).c_str());
+                        printf("  Reading %d samples from CD at %s\n", sufficient_samples, msfs_location_to_string(this
+                                   ->tracks[current_track].get_current_location()).c_str());
 #endif
                         if (const auto result = tracks[current_track].pop_samples(sufficient_samples)) {
                             sample_buffer.push_samples(result.value().data(), result.value().size());
                         } else {
 #if AUDIPI_DEBUG
-                        printf("  Error reading samples from CD\n");
+                            printf("  Error reading samples from CD\n");
 #endif
                             this->set_error("Error reading samples from CD");
-                            return;
+                            return; // bad to kill CD reading thread!
                         }
+
+                        // throttle reading speeds to avoid disc spin-up
+                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     } else {
                         filling_buffer.clear();
                     }
@@ -88,6 +91,7 @@ namespace audipi {
         }
         this->state = PlayerState::STOPPED;
         this->current_track = 0;
+        this->sample_buffer.discard();
         this->audio_device.reset();
     }
 
@@ -98,6 +102,7 @@ namespace audipi {
         this->tracks[current_track++].reset();
         this->tracks[current_track].reset();
         this->sample_buffer.discard();
+        this->audio_device.reset();
     }
 
     void Player::prev_track() {
@@ -106,6 +111,7 @@ namespace audipi {
         this->tracks[current_track--].reset();
         this->tracks[current_track].reset();
         this->sample_buffer.discard();
+        this->audio_device.reset();
     }
 
     std::expected<void, std::string> Player::jump_to_track(const int track_idx) {
@@ -116,6 +122,7 @@ namespace audipi {
         this->current_track = track_idx;
         this->tracks[current_track].reset();
         this->sample_buffer.discard();
+        this->audio_device.reset();
         return {};
     }
 
@@ -160,15 +167,17 @@ namespace audipi {
                 return;
             }
 #if AUDIPI_DEBUG
-            printf("  Enqueuing %d samples for playback\n", sufficient_samples);
+            printf("  Reading %d samples from buffer\n", sufficient_samples);
 #endif
 
             sample_data samples[sufficient_samples];
-            sample_buffer.pop_samples(samples, sufficient_samples);
+            const auto count = sample_buffer.pop_samples(samples, sufficient_samples);
 
-            if (const auto enqueue_for_playback_maybe = audio_device.enqueue_for_playback(
-                reinterpret_cast<u_int8_t *>(samples), sufficient_samples * 4)) {
-                // todo change with bitcast
+#if AUDIPI_DEBUG
+            printf("  Enqueueing %d samples for playback\n", sufficient_samples);
+#endif
+
+            if (const auto enqueue_for_playback_maybe = audio_device.enqueue_for_playback(samples, count)) {
 #if AUDIPI_DEBUG
                 printf("  Enqueued %ld samples for playback\n", enqueue_for_playback_maybe.value() / 4);
 #endif

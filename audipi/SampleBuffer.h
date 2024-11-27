@@ -11,6 +11,7 @@ namespace audipi {
         size_t head = 0;
         size_t tail = 0;
         void reallocate_buffer();
+        size_t internal_size() const;
         [[nodiscard]] std::size_t available_space() const;
         mutable std::mutex mutex;
 
@@ -21,7 +22,7 @@ namespace audipi {
 
         void push_samples(const sample_data *samples, size_t count);
 
-        void pop_samples(sample_data *samples, size_t count);
+        size_t pop_samples(sample_data *samples, size_t count);
 
         void read_samples(sample_data *samples, size_t count, size_t offset) const;
 
