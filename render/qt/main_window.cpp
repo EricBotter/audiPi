@@ -78,8 +78,8 @@ void MainWindow::prev_track() const {
     player->prev_track();
 }
 
-void MainWindow::track_selected(QListWidgetItem *item) const {
-    auto trackIdx = item->text().split(" ")[1].toInt() - 1;
+void MainWindow::track_selected(const QListWidgetItem *item) const {
+    const auto trackIdx = item->text().split(" ")[1].toInt() - 1;
 
     player->jump_to_track(trackIdx);
 }

@@ -26,7 +26,7 @@ public:
 
     void prev_track() const;
 
-    void track_selected(QListWidgetItem *item) const;
+    void track_selected(const QListWidgetItem *item) const;
 
     void stop() const;
 
