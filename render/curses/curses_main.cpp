@@ -22,7 +22,7 @@ int curses_main() {
     printw("Initializing...\n");
     refresh();
 
-    int rows, cols;
+    [[maybe_unused]] int rows, cols;
     getmaxyx(stdscr, rows, cols);
 
     auto cd_rom = audipi::CdRom("/dev/cdrom");

@@ -114,7 +114,7 @@ namespace audipi {
         this->audio_device.reset();
     }
 
-    std::expected<void, std::string> Player::jump_to_track(const int track_idx) {
+    std::expected<void, std::string> Player::jump_to_track(const size_t track_idx) {
         if (track_idx < 0 || track_idx >= this->tracks.size()) {
             return std::unexpected("Out of bounds");
         }

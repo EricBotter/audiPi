@@ -14,6 +14,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 qt_standard_project_setup()
 
 add_compile_definitions(AUDIPI_DEBUG=0)
+add_compile_options(-Wall -Werror)
 
 add_library(render_curses render/curses/curses_main.cpp)
 add_library(render_qt render/qt/qt_main.cpp render/qt/main_window.ui

@@ -24,7 +24,7 @@ std::string render_error(const int error_num) {
 
 static int keepRunning = 1;
 
-void intHandler(int ignored) {
+void intHandler([[maybe_unused]] int ignored) {
     keepRunning = 0;
 }
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void print_frame(const audipi::SampleBuffer &sample_buffer, const audipi::msf_location &current_location,
+void print_frame([[maybe_unused]] const audipi::SampleBuffer &sample_buffer, const audipi::msf_location &current_location,
                  const size_t track_num) {
     std::array<int16_t, 588 * 2> packed_data{};
     std::array<int16_t, 588> left_channel{};

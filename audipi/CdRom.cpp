@@ -35,14 +35,14 @@ namespace audipi {
     }
 
     std::expected<void, int> CdRom::start() const {
-        if (int error = ioctl(cdrom_fd, CDROMSTART, 0)) {
+        if (ioctl(cdrom_fd, CDROMSTART, 0)) {
             return std::unexpected(errno);
         }
         return {};
     }
 
     std::expected<void, int> CdRom::stop() const {
-        if (int error = ioctl(cdrom_fd, CDROMSTOP, 0)) {
+        if (ioctl(cdrom_fd, CDROMSTOP, 0)) {
             return std::unexpected(errno);
         }
         return {};

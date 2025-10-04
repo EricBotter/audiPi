@@ -54,7 +54,7 @@ namespace audipi {
 
         void prev_track();
 
-        std::expected<void, std::string> jump_to_track(int track_idx);
+        std::expected<void, std::string> jump_to_track(size_t track_idx);
 
         void clear_playlist();
 

@@ -6,7 +6,7 @@
 
 #include "../../audipi/util.h"
 
-constexpr auto UPDATE_INTERVAL_MS = 20;
+constexpr auto UPDATE_INTERVAL_MS = 20L;
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui_AudiPi), player(new audipi::Player),
                                           cd_rom(new audipi::CdRom("/dev/cdrom")) {
@@ -81,7 +81,9 @@ void MainWindow::prev_track() const {
 void MainWindow::track_selected(const QListWidgetItem *item) const {
     const auto trackIdx = item->text().split(" ")[1].toInt() - 1;
 
-    player->jump_to_track(trackIdx);
+    if (player->jump_to_track(trackIdx)) {
+        ui->statusLabel->setText("Error while skipping to track"); // todo improve error reporting
+    };
 }
 
 void MainWindow::stop() const {
