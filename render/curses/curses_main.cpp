@@ -19,7 +19,7 @@ int curses_main() {
     keypad(stdscr, true);
     nodelay(stdscr, true);
 
-    printw("Initializing...\n");
+    addstr("Initializing...\n");
     refresh();
 
     [[maybe_unused]] int rows, cols;
@@ -28,44 +28,44 @@ int curses_main() {
     auto cd_rom = audipi::CdRom("/dev/cdrom");
 
     if (!cd_rom.is_init()) {
-        printw("cannot open /dev/cdrom\n");
+        addstr("cannot open /dev/cdrom\n");
         return ncurses_err();
     }
 
     if (auto drive_status_result = cd_rom.get_drive_status()) {
         if (drive_status_result.value() == audipi::drive_status::no_disk) {
-            printw("No disc in disc drive!\n");
+            addstr("No disc in disc drive!\n");
             return ncurses_err();
         }
         if (drive_status_result.value() != audipi::drive_status::disc_ok) {
-            printw("Drive status not OK: ");
-            printw(std::to_string(static_cast<int>(drive_status_result.value())).c_str());
-            printw("\n");
+            addstr("Drive status not OK: ");
+            addstr(std::to_string(static_cast<int>(drive_status_result.value())).c_str());
+            addstr("\n");
             return ncurses_err();
         }
     } else {
-        printw("get_drive_status: unexpected error: ");
-        printw(render_error(drive_status_result.error()).c_str());
-        printw("\n");
+        addstr("get_drive_status: unexpected error: ");
+        addstr(render_error(drive_status_result.error()).c_str());
+        addstr("\n");
         return ncurses_err();
     }
 
     if (auto disk_type = cd_rom.get_disk_type(); disk_type == audipi::disk_type::unsupported) {
-        printw("get_disk_type: unsupported disk\n");
+        addstr("get_disk_type: unsupported disk\n");
         return ncurses_err();
     }
 
     audipi::Player player;
     if (!player.is_init()) {
-        printw("Cannot initialize Player\n");
+        addstr("Cannot initialize Player\n");
         return ncurses_err();
     }
 
     auto disk_toc = cd_rom.read_toc();
     if (!disk_toc) {
-        printw("Cannot enqueue disk: ");
-        printw(render_error(disk_toc.error()).c_str());
-        printw("\n");
+        addstr("Cannot enqueue disk: ");
+        addstr(render_error(disk_toc.error()).c_str());
+        addstr("\n");
         return ncurses_err();
     }
 
@@ -79,15 +79,15 @@ int curses_main() {
 
         const int cur_row = getcury(stdscr);
 
-        printw("Player status: ");
-        printw(std::to_string(static_cast<int>(state)).c_str());
-        printw(" - Track[");
-        printw(audipi::left_pad_string(std::to_string(current_track_index), 2, '0').c_str());
-        printw("]: ");
-        printw(current_track_name.c_str());
-        printw(" - Location: ");
-        printw(msf_location_to_string(current_location_in_track).c_str());
-        printw("   ");
+        addstr("Player status: ");
+        addstr(std::to_string(static_cast<int>(state)).c_str());
+        addstr(" - Track[");
+        addstr(audipi::left_pad_string(std::to_string(current_track_index), 2, '0').c_str());
+        addstr("]: ");
+        addstr(current_track_name.c_str());
+        addstr(" - Location: ");
+        addstr(msf_location_to_string(current_location_in_track).c_str());
+        addstr("   ");
 
         move(cur_row, 0);
 
@@ -119,7 +119,7 @@ int curses_main() {
 }
 
 int ncurses_err(const int exit_code) {
-    printw("Press any key to exit");
+    addstr("Press any key to exit");
     refresh();
     timeout(-1);
     getch();
