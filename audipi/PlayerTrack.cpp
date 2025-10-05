@@ -52,7 +52,7 @@ namespace audipi {
             current_location += msfs_location{0, 0, 1, 0};
         }
 
-        for (auto i = samples.size(); i < num_samples; i += 588) {
+        for (auto i = samples.size(); i < num_samples; i += SAMPLES_IN_FRAME) {
             if (auto result = cd_rom.read_frame(current_location + track.address)) {
                 auto frame_samples = copy_from(result.value().raw_data);
 
@@ -66,7 +66,7 @@ namespace audipi {
 
         if (samples.size() > num_samples) {
             current_location -= msfs_location{0, 0, 1, 0};
-            current_location.samples = 588 - (samples.size() - num_samples);
+            current_location.samples = SAMPLES_IN_FRAME - (samples.size() - num_samples);
             samples.resize(num_samples);
         }
 

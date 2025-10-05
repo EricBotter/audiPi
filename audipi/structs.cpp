@@ -19,7 +19,7 @@ namespace audipi {
     }
 
     msfs_location::operator msf_location() const {
-        return *reinterpret_cast<const msf_location*>(this);
+        return *reinterpret_cast<const msf_location*>(this); //fixme what the hell is this? memory corruption 101
     }
 
     msf_location operator-(const msf_location &left, const msf_location &right) {

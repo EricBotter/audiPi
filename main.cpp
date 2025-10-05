@@ -162,13 +162,13 @@ int main(int argc, char *argv[]) {
 
 void print_frame([[maybe_unused]] const audipi::SampleBuffer &sample_buffer, const audipi::msf_location &current_location,
                  const size_t track_num) {
-    std::array<int16_t, 588 * 2> packed_data{};
-    std::array<int16_t, 588> left_channel{};
-    std::array<int16_t, 588> right_channel{};
+    std::array<int16_t, SAMPLES_IN_FRAME * 2> packed_data{};
+    std::array<int16_t, SAMPLES_IN_FRAME> left_channel{};
+    std::array<int16_t, SAMPLES_IN_FRAME> right_channel{};
 
     // sample_buffer.read_samples(reinterpret_cast<uint8_t *>(packed_data.data()), 2352, 0);
 
-    for (int i = 0; i < 588; ++i) {
+    for (int i = 0; i < SAMPLES_IN_FRAME; ++i) {
         left_channel[i] = static_cast<int16_t>(std::abs(packed_data[i * 2]));
         right_channel[i] = static_cast<int16_t>(std::abs(packed_data[i * 2 + 1]));
     }
