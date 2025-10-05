@@ -1,32 +1,38 @@
 #ifndef SAMPLEBUFFER_H
 #define SAMPLEBUFFER_H
 #include <mutex>
-#include <vector>
+#include <map>
+#include <set>
 
 #include "structs.h"
 
+template<> struct std::less<audipi::msf_location>
+{
+    bool operator() (const audipi::msf_location& lhs, const audipi::msf_location& rhs) const {
+        return lhs.minute < rhs.minute && lhs.second < rhs.second && lhs.frame < rhs.frame;
+    }
+};
+
 namespace audipi {
     class SampleBuffer {
-        std::vector<sample_data> buffer;
-        size_t head = 0;
-        size_t tail = 0;
-        void reallocate_buffer();
-        size_t internal_size() const;
-        [[nodiscard]] std::size_t available_space() const;
+        std::map<msf_location, std::array<sample_data, SAMPLES_IN_FRAME>> cache;
+
+        std::set<msf_location> expired;
+
+        size_t max_samples;
+
         mutable std::mutex mutex;
 
     public:
-        SampleBuffer();
+        explicit SampleBuffer(size_t max_samples);
 
-        [[nodiscard]] size_t size() const;
+        SampleBuffer(const SampleBuffer& other);
 
-        void push_samples(const sample_data *samples, size_t count);
+        void add_frame(const msf_location &location, const std::array<sample_data, SAMPLES_IN_FRAME> &samples);
 
-        size_t pop_samples(sample_data *samples, size_t count);
+        std::array<sample_data, SAMPLES_IN_FRAME> read_frame(const msf_location &location);
 
-        void read_samples(sample_data *samples, size_t count, size_t offset) const;
-
-        void discard_samples(size_t count);
+        void discard_frame(const msf_location &location);
 
         void discard();
     };

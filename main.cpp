@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, intHandler);
     signal(SIGTERM, intHandler);
 
-    auto cd_rom = audipi::CdRom("/dev/cdrom");
+    auto cd_rom = audipi::CdRom("/dev/sr0");
 
     if (!cd_rom.is_init()) {
         std::cout << "cannot open /dev/cdrom" << std::endl;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
                 << "]: " << player_status.current_track_name
                 << " - Location: " << msf_location_to_string(player_status.current_location_in_track) << std::flush;
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100L));
     }
 
     std::cout << std::endl;

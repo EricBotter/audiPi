@@ -28,7 +28,7 @@ namespace audipi {
 
         [[nodiscard]] std::expected<disk_toc, int> read_toc() const;
 
-        [[nodiscard]] std::expected<audio_frame, int> read_frame(const msf_location& location) const;
+        [[nodiscard]] std::expected<cd_audio_frame, int> read_frame(const msf_location& location) const;
 
         ~CdRom();
     };

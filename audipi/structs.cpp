@@ -4,7 +4,7 @@
 
 constexpr u_int8_t FRAME_LIMIT = CD_FRAMES;
 constexpr u_int8_t SEC_LIMIT = CD_SECS;
-constexpr u_int16_t SAMPLE_LIMIT = 588;
+constexpr u_int16_t SAMPLE_LIMIT = SAMPLES_IN_FRAME;
 
 namespace audipi {
     msf_location operator+(const msf_location &left, const msf_location &right) {
@@ -16,6 +16,10 @@ namespace audipi {
         frames %= FRAME_LIMIT;
 
         return {mins, secs, frames};
+    }
+
+    msfs_location::operator msf_location() const {
+        return *reinterpret_cast<const msf_location*>(this);
     }
 
     msf_location operator-(const msf_location &left, const msf_location &right) {
@@ -121,5 +125,9 @@ namespace audipi {
             static_cast<u_int16_t>(samples % SAMPLE_LIMIT)
         };
         return left - right;
+    }
+
+    bool operator==(const msf_location &left, const msf_location &right) {
+        return left.minute == right.minute && left.second == right.second && left.frame == right.frame;
     }
 }

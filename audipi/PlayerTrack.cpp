@@ -4,7 +4,11 @@
 
 namespace audipi {
     CdPlayerTrack::CdPlayerTrack(CdRom &cd_rom, const disk_toc_entry &track)
-        : cd_rom(cd_rom), track(track), current_location{0, 0, 0, 0} {
+        : cd_rom(cd_rom), buffer(64), track(track), current_location{0, 0, 0, 0} {
+    }
+
+    CdPlayerTrack::CdPlayerTrack(const CdPlayerTrack &other)
+        : cd_rom(other.cd_rom), buffer(other.buffer), track(other.track), current_location(other.current_location){
     }
 
     void CdPlayerTrack::reset() {
@@ -67,5 +71,9 @@ namespace audipi {
         }
 
         return std::move(samples);
+    }
+
+    void CdPlayerTrack::prefetch_samples(size_t num_samples) {
+        //do nothing
     }
 }

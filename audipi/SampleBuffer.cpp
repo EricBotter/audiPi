@@ -1,90 +1,47 @@
 #include "SampleBuffer.h"
 
-#include <cstdio>
-
 #include "structs.h"
 
 namespace audipi {
-    SampleBuffer::SampleBuffer() {
-        this->buffer = std::vector<sample_data>(44100); // 1 second of 44.1kHz stereo audio
+    SampleBuffer::SampleBuffer(const size_t max_samples) {
+        this->max_samples = max_samples;
     }
 
-    std::size_t SampleBuffer::internal_size() const {
-        return (this->buffer.size() + this->head - this->tail) % this->buffer.size();
+    SampleBuffer::SampleBuffer(const SampleBuffer &other): cache(other.cache), expired(other.expired), max_samples(other.max_samples) {
     }
 
-    size_t SampleBuffer::size() const {
-        std::lock_guard lg(this->mutex);
-        return internal_size();
-    }
-
-    void SampleBuffer::push_samples(const sample_data *samples, const size_t count) {
+    void SampleBuffer::add_frame(const msf_location &location, const std::array<sample_data, SAMPLES_IN_FRAME> &samples) {
         std::lock_guard lg(this->mutex);
 
-        size_t available_space = this->available_space();
-        while (available_space <= count) {
-            this->reallocate_buffer();
-            available_space = this->available_space();
+        if (this->cache.size() == max_samples) {
+            for (auto expired_i : this->expired) {
+                this->cache.erase(expired_i);
+            }
+            this->expired.clear();
         }
 
-        for (size_t i = 0; i < count; ++i) { // todo: optimize
-            this->buffer[this->head] = samples[i];
-            this->head = (this->head + 1) % this->buffer.size();
+        this->cache[location] = samples;
+
+        if (const auto found = std::ranges::find(this->expired, location); found != this->expired.end()) {
+            this->expired.erase(found);
         }
     }
 
-    size_t SampleBuffer::pop_samples(sample_data *samples, const size_t count) {
+    std::array<sample_data, SAMPLES_IN_FRAME> SampleBuffer::read_frame(const msf_location &location) {
         std::lock_guard lg(this->mutex);
 
-        const size_t actual = std::min(count, this->internal_size());
-        for (size_t i = 0; i < actual; ++i) { // todo: optimize
-            samples[i] = this->buffer[this->tail];
-            this->tail = (this->tail + 1) % this->buffer.size();
-        }
-        return actual;
+        this->expired.insert(location);
+        return this->cache[location];
     }
 
-    void SampleBuffer::read_samples(sample_data *samples, const size_t count, const size_t offset) const {
-        std::lock_guard lg(this->mutex);
-
-        for (size_t i = 0; i < count; ++i) { // todo: optimize
-            samples[i] = this->buffer[(this->tail + offset + i) % this->buffer.size()];
-        }
-    }
-
-    void SampleBuffer::discard_samples(const size_t count) {
-        std::lock_guard lg(this->mutex);
-
-        this->tail = (this->tail + count) % this->buffer.size();
+    void SampleBuffer::discard_frame(const msf_location &location) {
+        this->expired.insert(location);
     }
 
     void SampleBuffer::discard() {
         std::lock_guard lg(this->mutex);
 
-        this->tail = this->head = 0;
-    }
-
-    void SampleBuffer::reallocate_buffer() {
-#if AUDIPI_DEBUG
-        printf("    Reallocating buffer from %lu to %lu\n", this->buffer.size(), this->buffer.size() * 2);
-#endif
-        std::vector<sample_data> new_buffer(this->buffer.size() * 2);
-        size_t i = 0;
-        while (this->tail != this->head) {
-            new_buffer[i] = this->buffer[this->tail];
-            this->tail = (this->tail + 1) % this->buffer.size();
-            i++;
-        }
-        this->tail = 0;
-        this->head = i;
-        this->buffer = new_buffer;
-    }
-
-    std::size_t SampleBuffer::available_space() const {
-        ssize_t used = static_cast<ssize_t>(this->head) - static_cast<ssize_t>(this->tail);
-        if (used < 0) {
-            used += static_cast<ssize_t>(this->buffer.size());
-        }
-        return this->buffer.size() - used;
+        cache.clear();
+        expired.clear();
     }
 }

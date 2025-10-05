@@ -20,13 +20,11 @@ namespace audipi {
 
     class Player {
         AudioDevice audio_device;
-        SampleBuffer sample_buffer;
         std::vector<CdPlayerTrack> tracks; // todo generalize to PlayerTrack
         size_t current_track{};
         PlayerState state = PlayerState::STOPPED;
         std::atomic_flag filling_buffer = false;
         std::string error_cause;
-        std::thread track_reader_thread;
 
         void set_error(const char* error);
 

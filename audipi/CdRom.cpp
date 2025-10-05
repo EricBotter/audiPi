@@ -146,7 +146,7 @@ namespace audipi {
         return disk_toc{header.cdth_trk0, header.cdth_trk1, entries};
     }
 
-    std::expected<audio_frame, int> CdRom::read_frame(const msf_location &location) const {
+    std::expected<cd_audio_frame, int> CdRom::read_frame(const msf_location &location) const {
 
         u_int8_t buffer[2352]{};
 
@@ -161,7 +161,7 @@ namespace audipi {
             return std::unexpected(read_error);
         }
 
-        audio_frame frame{};
+        cd_audio_frame frame{};
 
         frame.raw_data = std::to_array(buffer);
 

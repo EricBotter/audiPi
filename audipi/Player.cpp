@@ -23,33 +23,6 @@ namespace audipi {
     }
 
     Player::Player() {
-        this->track_reader_thread = std::thread([this] {
-            while (true) {
-                if (filling_buffer.test()) {
-                    if (sample_buffer.size() < internal_high_threshold_samples) {
-#if AUDIPI_DEBUG
-                        printf("  Reading %d samples from CD at %s\n", sufficient_samples, msfs_location_to_string(this
-                                   ->tracks[current_track].get_current_location()).c_str());
-#endif
-                        if (const auto result = tracks[current_track].pop_samples(sufficient_samples)) {
-                            sample_buffer.push_samples(result.value().data(), result.value().size());
-                        } else {
-#if AUDIPI_DEBUG
-                            printf("  Error reading samples from CD\n");
-#endif
-                            this->set_error("Error reading samples from CD");
-                            return; // bad to kill CD reading thread!
-                        }
-
-                        // throttle reading speeds to avoid disc spin-up
-                        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                    } else {
-                        filling_buffer.clear();
-                    }
-                }
-            }
-        });
-        this->track_reader_thread.detach();
     };
 
     bool Player::is_init() const {
@@ -91,17 +64,14 @@ namespace audipi {
         }
         this->state = PlayerState::STOPPED;
         this->current_track = 0;
-        this->sample_buffer.discard();
         this->audio_device.reset();
     }
 
     void Player::next_track() {
         if (current_track >= tracks.size() - 1)
             return;
-        this->sample_buffer.discard();
         this->tracks[current_track++].reset();
         this->tracks[current_track].reset();
-        this->sample_buffer.discard();
         this->audio_device.reset();
     }
 
@@ -110,7 +80,6 @@ namespace audipi {
             return;
         this->tracks[current_track--].reset();
         this->tracks[current_track].reset();
-        this->sample_buffer.discard();
         this->audio_device.reset();
     }
 
@@ -121,7 +90,6 @@ namespace audipi {
         this->tracks[current_track].reset();
         this->current_track = track_idx;
         this->tracks[current_track].reset();
-        this->sample_buffer.discard();
         this->audio_device.reset();
         return {};
     }
@@ -137,17 +105,11 @@ namespace audipi {
             return;
         }
 
-        constexpr int internal_low_threshold_samples = 44100 * 15;
-
 #if AUDIPI_DEBUG
         printf("Player::tick %ld\n", std::chrono::system_clock::now().time_since_epoch().count());
         printf("  Filling buffer: %d\n", filling_buffer.test());
         printf("  Buffer size: %lu\n", sample_buffer.size());
 #endif
-
-        if (filling_buffer.test() || sample_buffer.size() < internal_low_threshold_samples) {
-            filling_buffer.test_and_set();
-        }
 
         if (this->state == PlayerState::PLAYING) {
             const auto samples_in_buffer_maybe = audio_device.get_samples_in_buffer();
@@ -170,14 +132,18 @@ namespace audipi {
             printf("  Reading %d samples from buffer\n", sufficient_samples);
 #endif
 
-            sample_data samples[sufficient_samples];
-            const auto count = sample_buffer.pop_samples(samples, sufficient_samples);
+            auto samples_read_maybe = this->tracks[current_track].pop_samples(sufficient_samples);
+            if (!samples_read_maybe) {
+                this->set_error("Error reading samples from track");
+                return;
+            }
 
 #if AUDIPI_DEBUG
             printf("  Enqueueing %d samples for playback\n", sufficient_samples);
 #endif
 
-            if (const auto enqueue_for_playback_maybe = audio_device.enqueue_for_playback(samples, count)) {
+            if (const auto samples_read = samples_read_maybe.value();
+                const auto enqueue_for_playback_maybe = audio_device.enqueue_for_playback(&samples_read[0], samples_read.size())) {
 #if AUDIPI_DEBUG
                 printf("  Enqueued %ld samples for playback\n", enqueue_for_playback_maybe.value() / 4);
 #endif
@@ -206,7 +172,7 @@ namespace audipi {
         msfs_location current_location = this->tracks[current_track].get_current_location();
 
         if (const auto samples_in_buffer = audio_device.get_samples_in_buffer()) {
-            current_location = current_location - sample_buffer.size() - samples_in_buffer.value();
+            current_location = current_location - samples_in_buffer.value();
         } else {
             this->set_error("Error reading sample count in audio device buffer in get_status");
             return ERROR_PLAYER_STATUS;
