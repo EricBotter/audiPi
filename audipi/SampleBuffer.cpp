@@ -10,7 +10,7 @@ namespace audipi {
     SampleBuffer::SampleBuffer(const SampleBuffer &other): cache(other.cache), expired(other.expired), max_samples(other.max_samples) {
     }
 
-    void SampleBuffer::add_frame(const msf_location &location, const std::array<sample_data, SAMPLES_IN_FRAME> &samples) {
+    void SampleBuffer::add_frame(const msf_location location, const std::array<sample_data, SAMPLES_IN_FRAME> &samples) {
         std::lock_guard lg(this->mutex);
 
         if (this->cache.size() == max_samples) {
@@ -27,6 +27,10 @@ namespace audipi {
         }
     }
 
+    bool SampleBuffer::has_frame(const msf_location &location) const {
+        return this->cache.contains(location);
+    }
+
     std::array<sample_data, SAMPLES_IN_FRAME> SampleBuffer::read_frame(const msf_location &location) {
         std::lock_guard lg(this->mutex);
 
@@ -35,6 +39,8 @@ namespace audipi {
     }
 
     void SampleBuffer::discard_frame(const msf_location &location) {
+        std::lock_guard lg(this->mutex);
+
         this->expired.insert(location);
     }
 

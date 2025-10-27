@@ -2,10 +2,6 @@
 
 #include <chrono>
 
-#if AUDIPI_DEBUG
-#include "util.h"
-#endif
-
 const audipi::Player::player_status ERROR_PLAYER_STATUS = {
     audipi::PlayerState::ERROR,
     0,
@@ -13,8 +9,7 @@ const audipi::Player::player_status ERROR_PLAYER_STATUS = {
     {}
 };
 
-constexpr int sufficient_samples = 44100;
-constexpr int internal_high_threshold_samples = 44100 * 60 * 2;
+constexpr int sufficient_samples = 11050; // 0.25 s
 
 namespace audipi {
     void Player::set_error(const char *error) {
@@ -107,8 +102,6 @@ namespace audipi {
 
 #if AUDIPI_DEBUG
         printf("Player::tick %ld\n", std::chrono::system_clock::now().time_since_epoch().count());
-        printf("  Filling buffer: %d\n", filling_buffer.test());
-        printf("  Buffer size: %lu\n", sample_buffer.size());
 #endif
 
         if (this->state == PlayerState::PLAYING) {
@@ -132,7 +125,7 @@ namespace audipi {
             printf("  Reading %d samples from buffer\n", sufficient_samples);
 #endif
 
-            auto samples_read_maybe = this->tracks[current_track].pop_samples(sufficient_samples);
+            const auto samples_read_maybe = this->tracks[current_track].pop_samples(sufficient_samples);
             if (!samples_read_maybe) {
                 this->set_error("Error reading samples from track");
                 return;
@@ -142,7 +135,7 @@ namespace audipi {
             printf("  Enqueueing %d samples for playback\n", sufficient_samples);
 #endif
 
-            if (const auto samples_read = samples_read_maybe.value();
+            if (const auto& samples_read = samples_read_maybe.value();
                 const auto enqueue_for_playback_maybe = audio_device.enqueue_for_playback(&samples_read[0], samples_read.size())) {
 #if AUDIPI_DEBUG
                 printf("  Enqueued %ld samples for playback\n", enqueue_for_playback_maybe.value() / 4);

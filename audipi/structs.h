@@ -46,6 +46,8 @@ namespace audipi {
     msfs_location operator+(const msfs_location& left, const size_t& samples);
     msfs_location operator-(const msfs_location& left, const size_t& samples);
 
+    msfs_location& operator+=(msfs_location& left, const size_t& samples);
+
     bool operator==(const msf_location& left, const msf_location& right);
 
     struct disk_toc_entry {

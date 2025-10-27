@@ -19,7 +19,10 @@ namespace audipi {
     }
 
     msfs_location::operator msf_location() const {
-        return *reinterpret_cast<const msf_location*>(this); //fixme what the hell is this? memory corruption 101
+        // is this safe? sounds like memory corruption waiting to happen
+        // return *reinterpret_cast<const msf_location*>(this);
+
+        return msf_location{this->minute, this->second, this->frame};
     }
 
     msf_location operator-(const msf_location &left, const msf_location &right) {
@@ -40,12 +43,12 @@ namespace audipi {
         return {mins, secs, frames};
     }
 
-    msf_location& operator+=(msf_location &left, const msf_location &right) {
+    msf_location &operator+=(msf_location &left, const msf_location &right) {
         left = left + right;
         return left;
     }
 
-    msf_location& operator-=(msf_location &left, const msf_location &right) {
+    msf_location &operator-=(msf_location &left, const msf_location &right) {
         left = left - right;
         return left;
     }
@@ -97,12 +100,12 @@ namespace audipi {
         return {mins, secs, frames, samples};
     }
 
-    msfs_location & operator+=(msfs_location &left, const msfs_location &right) {
+    msfs_location &operator+=(msfs_location &left, const msfs_location &right) {
         left = left + right;
         return left;
     }
 
-    msfs_location & operator-=(msfs_location &left, const msfs_location &right) {
+    msfs_location &operator-=(msfs_location &left, const msfs_location &right) {
         left = left - right;
         return left;
     }
@@ -125,6 +128,11 @@ namespace audipi {
             static_cast<u_int16_t>(samples % SAMPLE_LIMIT)
         };
         return left - right;
+    }
+
+    msfs_location &operator+=(msfs_location &left, const size_t &samples) {
+        left = left + samples;
+        return left;
     }
 
     bool operator==(const msf_location &left, const msf_location &right) {
