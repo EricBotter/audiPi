@@ -3,17 +3,17 @@
 #include "structs.h"
 
 namespace audipi {
-    SampleBuffer::SampleBuffer(const size_t max_samples) {
-        this->max_samples = max_samples;
+    SampleBuffer::SampleBuffer(const size_t max_frames) {
+        this->max_frames = max_frames;
     }
 
-    SampleBuffer::SampleBuffer(const SampleBuffer &other): cache(other.cache), expired(other.expired), max_samples(other.max_samples) {
+    SampleBuffer::SampleBuffer(const SampleBuffer &other): cache(other.cache), expired(other.expired), max_frames(other.max_frames) {
     }
 
     void SampleBuffer::add_frame(const msf_location location, const std::array<sample_data, SAMPLES_IN_FRAME> &samples) {
         std::lock_guard lg(this->mutex);
 
-        if (this->cache.size() == max_samples) {
+        if (this->cache.size() == max_frames) {
             for (auto expired_i : this->expired) {
                 this->cache.erase(expired_i);
             }

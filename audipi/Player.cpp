@@ -17,8 +17,7 @@ namespace audipi {
         this->state = PlayerState::ERROR;
     }
 
-    Player::Player() {
-    };
+    Player::Player() = default;
 
     bool Player::is_init() const {
         return this->audio_device.is_init();
@@ -26,7 +25,9 @@ namespace audipi {
 
     void Player::enqueue_cd(CdRom &cd_rom, const disk_toc &toc) {
         for (const auto &track: toc.entries) {
-            this->tracks.emplace_back(cd_rom, track);
+            CdPlayerTrack player_track(cd_rom, track);
+            player_track.prefetch_samples(5*44100);
+            this->tracks.push_back(player_track);
         }
     }
 

@@ -25,12 +25,12 @@ namespace audipi {
 
         std::set<msf_location> expired;
 
-        size_t max_samples;
+        size_t max_frames;
 
         mutable std::mutex mutex;
 
     public:
-        explicit SampleBuffer(size_t max_samples);
+        explicit SampleBuffer(size_t max_frames);
 
         SampleBuffer(const SampleBuffer& other);
 

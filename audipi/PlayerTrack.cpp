@@ -8,7 +8,7 @@
 
 namespace audipi {
     CdPlayerTrack::CdPlayerTrack(CdRom &cd_rom, const disk_toc_entry &track)
-        : cd_rom(cd_rom), buffer(64), track(track), current_location{0, 0, 0, 0} {
+        : cd_rom(cd_rom), buffer(30*75), track(track), current_location{0, 0, 0, 0} {
     }
 
     CdPlayerTrack::CdPlayerTrack(const CdPlayerTrack &other) = default;
@@ -84,10 +84,32 @@ namespace audipi {
             samples_to_fetch -= num_to_fetch;
         }
 
-        return std::move(samples);
+        return samples;
     }
 
     void CdPlayerTrack::prefetch_samples(const size_t num_samples) {
-        // do nothing
+        size_t samples_to_fetch = num_samples;
+        msf_location location = current_location;
+#if AUDIPI_DEBUG
+        printf("Prefetching %ld samples\n", samples_to_fetch);
+#endif
+
+        while (samples_to_fetch > 0) {
+            if (!buffer.has_frame(location)) {
+                if (auto result = cd_rom.read_frame(location + track.address)) {
+                    auto frame_samples = copy_from(result.value().raw_data);
+                    buffer.add_frame(location, frame_samples);
+
+#if AUDIPI_DEBUG
+                    printf("  Added frame %d:%d:%d to cache\n", location.minute, location.second, location.frame);
+#endif
+                } else {
+                    break;
+                }
+            }
+
+            samples_to_fetch -= SAMPLES_IN_FRAME;
+            location = location + SAMPLES_IN_FRAME;
+        }
     }
 } // namespace audipi
