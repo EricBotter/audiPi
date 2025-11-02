@@ -4,7 +4,7 @@
 #include <array>
 #include <sys/types.h>
 
-constexpr auto SAMPLES_IN_FRAME = 588;
+constexpr size_t SAMPLES_IN_FRAME = 588;
 
 namespace audipi {
     /**

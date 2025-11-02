@@ -168,13 +168,13 @@ void print_frame([[maybe_unused]] const audipi::SampleBuffer &sample_buffer, con
 
     // sample_buffer.read_samples(reinterpret_cast<uint8_t *>(packed_data.data()), 2352, 0);
 
-    for (int i = 0; i < SAMPLES_IN_FRAME; ++i) {
+    for (size_t i = 0; i < SAMPLES_IN_FRAME; ++i) {
         left_channel[i] = static_cast<int16_t>(std::abs(packed_data[i * 2]));
         right_channel[i] = static_cast<int16_t>(std::abs(packed_data[i * 2 + 1]));
     }
 
-    const auto left_max = *std::max_element(left_channel.begin(), left_channel.end());
-    const auto right_max = *std::max_element(right_channel.begin(), right_channel.end());
+    const auto left_max = *std::ranges::max_element(left_channel);
+    const auto right_max = *std::ranges::max_element(right_channel);
 
     std::cout << "Track " << std::setfill('0') << std::setw(2) << +track_num <<
             " - [" <<
